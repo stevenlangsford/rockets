@@ -1,0 +1,36 @@
+body {
+    background-color:lightgrey;
+    color:black;
+    font-size:1.5em;
+}
+h1 {
+    margin-left:auto;
+    margin-right:auto;
+    text-align:center;
+}
+p {
+    margin-left:auto;
+    margin-right:auto; 
+ }
+
+.centered{
+    margin-left:auto;
+    margin-right:auto;
+    text-align:center;
+}
+
+#ubercanvas{
+    width:95%;
+    height:95%;
+    border:3px solid black;
+    position:absolute;
+    margin-left:auto;
+    margin-right:auto;
+    bottom:0;
+}
+
+ button {
+     font-size:1.2em;
+     border-radius:.5em;
+     background-color:darkgrey;
+ }
