@@ -114,94 +114,89 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
     
 }
 
+function response_listener(buttonid){
+    console.log("listener heard "+buttonid);
+}
+
+function pair_trial(rocket1, rocket2){
+    this.rocket1 = rocket1;
+    this.rocket2 = rocket2;
+
+    this.drawMe = function(){
+	var mid_x = document.getElementById("ubercanvas").width / 2;
+	var mid_y =  document.getElementById("ubercanvas").height / 2;
+
+	var gapwidth = 125; // gap each side of center, ie half the full gap width. in px.
+	var buttonheight = 50;
+	var buttonwidth = 125;
+
+	
+	this.rocket1.drawMe(mid_x - gapwidth, mid_y);
+	this.rocket2.drawMe(mid_x + gapwidth, mid_y);
+
+
+	// document.write("<button id='immab' style='position:absolute; top:"+(mid_y+150)+"px; left:"+(mid_x-buttongap-buttongap/2)+"px'>This one</button>")
+	// document.write("<button style='position:absolute; top:"+(mid_y+150)+"px; left:"+(mid_x+buttongap-buttongap/2)+"px'>This one</button>")
+
+	// document.write("<img src='img/thisone_button.png' height='"+buttonheight+"' width='"+buttonwidth+"' "+
+	// 	       "style='"+
+	// 	       "position:fixed; "+
+	// 	       "top:"+(mid_y + buttonheight + 50)+" "+
+	// 	       "left:"+(mid_x - gapwidth - (buttonwidth/2))+" "+
+	// 	       "'>");// (') end style (>) end img
+
+
+	function button_getter(id,top,left){
+	    return("<img id='imgbutton"+id+"' src='img/thisone_button.png' "+
+		   "onmouseenter=\"this.src='"+"img/thisone_button_green.png"+"'\""+
+		   "onmouseleave=\"this.src='"+"img/thisone_button.png"+"'\""+
+		   "onclick=\"response_listener('"+id+"')\""+
+		   "style='"+
+		   "height:"+buttonheight+"px; "+
+		   "width:"+buttonwidth+"px; "+
+		   "position:fixed; "+
+		   "top:"+top+"px; "+
+		   "left:"+left+"px; "+
+		   "'>")
+	}
+	abs_holder_div.innerHTML = button_getter(1,
+						 (mid_y + buttonheight*1.5),
+						 mid_x - gapwidth - (buttonwidth/2-15)
+						)+
+	    button_getter(2,
+			  (mid_y + buttonheight*1.5),
+			  mid_x + gapwidth - (buttonwidth/2-15)
+			 );
+		
+	
+	console.log("YAY");
+    }
+
+}
+
+//MAIN
 
 var bar_demo = new makeRocket(Math.random(),Math.random(),"height","bar_demo");
 var color_demo = new makeRocket(Math.random(),Math.random(),"color","color_demo");
 
-var demostimbucket = [];
-for(var i=0;i<3;i++){
-    demostimbucket.push(new makeRocket(Math.random(),Math.random(),"height","bar_demo"));
-    demostimbucket.push(new makeRocket(Math.random(),Math.random(),"color","bar_demo"));    
-}
+var atrial = new pair_trial(bar_demo, color_demo);
 
-//Math.random() < .5 ? bar_demo.drawMe(100,100) : color_demo.drawMe(250,100);
-shuffle(demostimbucket);
+atrial.drawMe();
 
- demostimbucket[0].drawMe(triad_x_positions[0],groundlevel-Math.random()*groundjitter)
- demostimbucket[1].drawMe(triad_x_positions[1],groundlevel-Math.random()*groundjitter)
- demostimbucket[2].drawMe(triad_x_positions[2],groundlevel-Math.random()*groundjitter)
+// var demostimbucket = [];
+// for(var i=0;i<3;i++){
+//     demostimbucket.push(new makeRocket(Math.random(),Math.random(),"height","bar_demo"));
+//     demostimbucket.push(new makeRocket(Math.random(),Math.random(),"color","bar_demo"));    
+// }
 
-// for(var i=0; i<3; i++){
+// //Math.random() < .5 ? bar_demo.drawMe(100,100) : color_demo.drawMe(250,100);
+// shuffle(demostimbucket);
+
+//  demostimbucket[0].drawMe(triad_x_positions[0],groundlevel-Math.random()*groundjitter)
+//  demostimbucket[1].drawMe(triad_x_positions[1],groundlevel-Math.random()*groundjitter)
+//  demostimbucket[2].drawMe(triad_x_positions[2],groundlevel-Math.random()*groundjitter)
+
+// for(var i=0;i<3;i++){
 //     console.log(i)
 //     demostimbucket[i].mystats();
-//     demostimbucket[i].drawMe((triad_x_positions[i],groundlevel-Math.random()*groundjitter))
 // }
-
-for(var i=0;i<3;i++){
-    console.log(i)
-    demostimbucket[i].mystats();
-}
-
-
-// //Generic sequence-of-trials
-// //If that's all you want, all you need to edit is the makeTrial object and the responseListener. Give maketrial an appropriate constructor that accept the key trial properties, a drawMe function, and something that will hit responseListener.
-// //then put a list of trial-property-setter entries in 'stim' and you're golden.
-
-// var trials = [];
-// var trialindex = 0;
-
-// function responseListener(aresponse){//global so it'll be just sitting here available for the trial objects to use. So, it must accept whatever they're passing.
-// //    console.log("responseListener heard: "+aresponse); //diag
-//     trials[trialindex].response = aresponse;
-//     trials[trialindex].responseTime= Date.now();
-    
-//     $.post('/response',{myresponse:JSON.stringify(trials[trialindex])},function(success){
-//     	console.log(success);//For now server returns the string "success" for success, otherwise error message.
-//     });
-    
-//     //can put this inside the success callback, if the next trial depends on some server-side info.
-//     trialindex++; //increment index here at the last possible minute before drawing the next trial, so trials[trialindex] always refers to the current trial.
-//     nextTrial();
-// }
-
-// function nextTrial(){
-//     if(trialindex<trials.length){
-// 	trials[trialindex].drawMe("uberdiv");
-//     }else{
-// 	$.post("/finish",function(data){window.location.replace(data)});
-//     }
-// }
-
-// // a trial object should have a drawMe function and a bunch of attributes.
-// //the data-getting process in 'dashboard.ejs' & getData routes creates a csv with a col for every attribute, using 'Object.keys' to list all the properties of the object. Assumes a pattern where everything interesting is saved to the trial object, then that is JSONified and saved as a response.
-// //Note functions are dropped by JSON.
-// //Also note this means you have to be consistent with the things that are added to each trial before they are saved, maybe init with NA values in the constructor.
-// function makeTrial(questiontext){
-//     this.ppntID = localStorage.getItem("ppntID");
-//     this.questiontext = questiontext;
-//     this.drawMe = function(targdiv){
-// 	this.drawTime = Date.now();
-// 	var responses = "<button onclick='responseListener(\"yes\")'>Yes</button><button onclick='responseListener(\"no\")'>No</button>";
-// 	document.getElementById(targdiv).innerHTML=
-// 	    "<div class='trialdiv'><p>"+this.questiontext+"</br>"+responses+"</p></div>";
-//     }
-// }
-
-
-
-// function shuffle(a) { //via https://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array
-//     var j, x, i;
-//     for (i = a.length - 1; i > 0; i--) {
-//         j = Math.floor(Math.random() * (i + 1));
-//         x = a[i];
-//         a[i] = a[j];
-//         a[j] = x;
-//     }
-//     return a;
-// }
-// //****************************************************************************************************
-// //Stimuli
-// var stim = shuffle(["Does this question have a correct answer?","What is the correct answer to this question?"]);
-// trials = stim.map(function(x){return new makeTrial(x)});
-
-// nextTrial();
