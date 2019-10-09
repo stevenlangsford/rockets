@@ -116,12 +116,21 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 
 function response_listener(buttonid){
     console.log("listener heard "+buttonid);
+    if(buttonid == trials[trialIndex].answer){
+	console.log("correct")
+    }else{
+	console.log("Wrong")
+    }
+    
+    nextTrial();
 }
 
-function pair_trial(rocket1, rocket2){
+function pair_trial(rocket1, rocket2, text, answer){
     this.rocket1 = rocket1;
     this.rocket2 = rocket2;
-
+    this.text = text;
+    this.answer = answer;
+    
     this.drawMe = function(){
 	var mid_x = document.getElementById("ubercanvas").width / 2;
 	var mid_y =  document.getElementById("ubercanvas").height / 2;
@@ -133,6 +142,13 @@ function pair_trial(rocket1, rocket2){
 	
 	this.rocket1.drawMe(mid_x - gapwidth, mid_y);
 	this.rocket2.drawMe(mid_x + gapwidth, mid_y);
+
+	var canvas = document.getElementById("ubercanvas");
+	var ctx = canvas.getContext('2d');
+	ctx.font = "1.5em Arial";
+	ctx.fillStyle = "black";
+	ctx.textAlign = "center";
+	ctx.fillText(this.text, canvas.width/2, 100);
 
 
 	// document.write("<button id='immab' style='position:absolute; top:"+(mid_y+150)+"px; left:"+(mid_x-buttongap-buttongap/2)+"px'>This one</button>")
@@ -168,35 +184,118 @@ function pair_trial(rocket1, rocket2){
 			  mid_x + gapwidth - (buttonwidth/2-15)
 			 );
 		
-	
-	console.log("YAY");
     }
 
 }
+//trial objects should all have drawMe functions. Chuck 'em all in an array, walk through with nextTrial calling drawMe on each.
+function splashScreen(text){
+    this.text = text;
+    
+    this.drawMe = function(){
+	var canvas = document.getElementById("ubercanvas");
+	var ctx = canvas.getContext('2d');
+//	ctx.clearRect(0,0,canvas.width,canvas.height);
+
+	ctx.font = "3em Arial";
+//	ctx.fillStyle = "red";
+	ctx.textAlign = "center";
+	ctx.fillText(this.text, canvas.width/2, canvas.height/2);
+
+	abs_holder_div.innerHTML = "<img id='splash' src='img/continuerocket.png' "+
+	    "onmouseenter=\"this.src='"+"img/continuerocket_green.png"+"'\""+
+	    "onmouseleave=\"this.src='"+"img/continuerocket.png"+"'\""+
+	    "onclick=\"nextTrial()\""+
+	    "style='"+
+	    "height:"+100+"px; "+
+	    "width:"+300+"px; "+
+	    "position:fixed; "+
+	    "top:"+(canvas.height/2+100)+"px; "+
+	    "left:"+(canvas.width/2-150)+"px; "+
+	    "'>";
+    }
+	
+}
+
+function nextTrial(){
+    trialIndex++;
+    var canvas = document.getElementById("ubercanvas");
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    abs_holder_div.innerHTML = "";
+    
+    if(trialIndex < trials.length){
+	trials[trialIndex].drawMe();
+    }else{
+	console.log("no more trials");
+    }
+}
+
+
+
+//stim builder:
+function push_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
+    //targ_feature in ["fuel", "base"]
+    //targ_difference in 0-1
+    //fueltype in ["color","height"]
+    
+    var lower_value = Math.random()*(1-targ_difference)
+    var upper_value = lower_value+targ_difference
+
+    var rockets = [];
+
+    if(targ_feature == "fuel"){
+	rockets.push(new makeRocket(lower_value,Math.random(),fueltype1,"pair_fuel"+targ_difference.toPrecision(4)));
+	rockets.push(new makeRocket(upper_value,Math.random(),fueltype2,"pair_fuel"+targ_difference.toPrecision(4)));
+    }
+    if(targ_feature == "base"){
+	rockets.push(new makeRocket(Math.random(),lower_value,fueltype1,"pair_fuel"+targ_difference.toPrecision(4)));
+	rockets.push(new makeRocket(Math.random(),upper_value,fueltype2,"pair_fuel"+targ_difference.toPrecision(4)));
+    }
+    if(!["fuel","base"].includes(targ_feature)){
+	error("bad push a pair "+targ_feature+":"+targ_difference+":"+use_barfuel_r1+":"+use_barfuel_r2);
+    }
+
+    shuffle(rockets)
+    
+    var ans;
+    if(targ_feature=="fuel"){
+	ans = rockets[0].fuel > rockets[1].fuel ? "1" : "2";
+    }
+    if(targ_feature =="base"){
+	ans = rockets[0].base > rockets[1].base ? "1" : "2";
+    }
+    
+    var mytrial = new pair_trial(rockets[0],
+				 rockets[1],
+				 "Which rocket has the best "+targ_feature+"?", ans);
+    trials.push(mytrial);
+}
 
 //MAIN
+var trialIndex = -1; //increment-first order in nextTrial() means trials[trialIndex] refers to the current trial.
+var trials = []; //still collect an array of all trials even when generating on the fly, because accessing trials[trialIndex] is so handy. (bad pattern?)
 
-var bar_demo = new makeRocket(Math.random(),Math.random(),"height","bar_demo");
-var color_demo = new makeRocket(Math.random(),Math.random(),"color","color_demo");
+trials.push(new splashScreen("Which rocket has the best base?"))
 
-var atrial = new pair_trial(bar_demo, color_demo);
+push_a_pair_trial("base",0.2,"height", "height")
+push_a_pair_trial("base",0.2,"color", "color")
+push_a_pair_trial("base",0.2,"color", "height")
+push_a_pair_trial("base",0.2,"height", "color")
 
-atrial.drawMe();
+trials.push(new splashScreen("Which rocket has the best fuel?"))
 
-// var demostimbucket = [];
-// for(var i=0;i<3;i++){
-//     demostimbucket.push(new makeRocket(Math.random(),Math.random(),"height","bar_demo"));
-//     demostimbucket.push(new makeRocket(Math.random(),Math.random(),"color","bar_demo"));    
-// }
+push_a_pair_trial("fuel",0.2,"height", "height")
+push_a_pair_trial("fuel",0.2,"color", "color")
+push_a_pair_trial("fuel",0.2,"color", "height")
+push_a_pair_trial("fuel",0.2,"height", "color")
 
-// //Math.random() < .5 ? bar_demo.drawMe(100,100) : color_demo.drawMe(250,100);
-// shuffle(demostimbucket);
 
-//  demostimbucket[0].drawMe(triad_x_positions[0],groundlevel-Math.random()*groundjitter)
-//  demostimbucket[1].drawMe(triad_x_positions[1],groundlevel-Math.random()*groundjitter)
-//  demostimbucket[2].drawMe(triad_x_positions[2],groundlevel-Math.random()*groundjitter)
+nextTrial();
 
-// for(var i=0;i<3;i++){
-//     console.log(i)
-//     demostimbucket[i].mystats();
-// }
+//demo:
+// var bar_demo = new makeRocket(Math.random(),Math.random(),"height","bar_demo");
+// var color_demo = new makeRocket(Math.random(),Math.random(),"color","color_demo");
+
+// var atrial = new pair_trial(bar_demo, color_demo);
+
+// atrial.drawMe();
