@@ -585,7 +585,7 @@ function splashScreen(text){
 	ctx.textAlign = "center";
 	ctx.fillText(this.text, canvas.width/2, canvas.height/2);
 
-	abs_holder_div.innerHTML = "<img id='splash' src='img/continuerocket.png' "+
+	abs_holder_div.innerHTML = "<img id='splash' src='/img/continuerocket.png' "+
 	    "onmouseenter=\"this.src='"+"img/continuerocket_green.png"+"'\""+
 	    "onmouseleave=\"this.src='"+"img/continuerocket.png"+"'\""+
 	    "onclick=\"nextTrial()\""+
