@@ -702,7 +702,7 @@ push_a_pair_trial("distance",0.2,"color", "color")
 push_a_pair_trial("distance",0.2,"color", "height")
 push_a_pair_trial("distance",0.2,"height", "color")
 
-trials.push(new splashScreen("Which of these rockets will fly furthest?"))
+trials.push(new splashScreen("Which rocket will fly furthest?"));
 
 trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo2"),
