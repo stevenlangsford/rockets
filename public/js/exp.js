@@ -317,10 +317,11 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
     this.flight_value = fuel_value * base_value;
 
     this.mystats = function(){
-	console.log(this.type)
-	console.log("fuel "+fuel_value);
-	console.log("feet "+base_value);
-	console.log("flight "+this.flight_value);
+
+	return (this.type)+":"+
+	(" fuel "+fuel_value)+
+	(" feet "+base_value)+
+	(" flight "+this.flight_value);
     }
 
     this.drawMe = function(x, y){
@@ -349,10 +350,10 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 		return(astring);
 	    }
 	}
-	var fuelcolor = display_type == "height" ? "#005500" : get_color(this.fuel) //default : variable value
+	var fuelcolor = display_type == "height" ? "#4d4d4d" : get_color(this.fuel) //default : variable value
 	
 	var fuelheight = display_type == "height" ? bh*(1-this.fuel) : 0; //when variable refs the size of the gap, so use 1-value. gap of 0 is filled-body.
-	
+
 	//draw body rect
 	ctx.beginPath();
 	ctx.moveTo(x , y); 
@@ -364,8 +365,9 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 	    //collision detection function
 	    // console.log("X:"+(click_x > x-bw && click_x < x-bw+bw*2))
 	    // console.log("Y:"+(click_y > y-bh && click_y < y+bh))
+	    console.log("pushing to clickable: "+(fuel_value*base_value));
 	    if(click_x > x-bw && click_x < x-bw+bw*2 &&
-		click_y > y-bh && click_y < y+bh)return (idstring);
+	       click_y > y-bh && click_y < y+bh)return((fuel_value*base_value));
 	    
 	    return "miss";//click_x > x-bw && click_x < x-bw+bw*2 && click_y > y-bh && click_y < y+bh;
 
@@ -409,13 +411,16 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 }
 
 function feedback(what_kind){
+    //dev
+    // console.log(what_kind);
+    // return;
+    //dev
+    
     if(!["correct","wrong"].includes(what_kind)){
 	error("bad feedback "+what_kind);
     }
 
-    console.log("feedback:"+what_kind);
-
-//    return; //no visuals, no nextTrial(). For dev tests.
+    //    return; //no visuals, no nextTrial(). For dev tests.
     //    live_ans = "reset";
     
     var canvas = document.getElementById("ubercanvas");
@@ -437,18 +442,15 @@ var live_clickables = []; //cleared by nextTrial, populated by rocket.drawMe (Lo
 var live_ans = "none"; //set by pair_trial.drawme. Compare clicked ans to this to give feedback.
 
 document.getElementById("ubercanvas").addEventListener('click',function(aclick){
-    //    console.log("I hear you");
-    console.log(aclick.offsetX+":"+aclick.offsetY);
     for(var i=0;i<live_clickables.length;i++){
 	var clickresult = live_clickables[i](aclick.offsetX,aclick.offsetY);
 	if(clickresult!="miss"){
+	    console.log("clickresult is ");
 	    console.log(clickresult);
 	    feedback(clickresult==live_ans ? "correct" : "wrong") //not true/false because there might be more than 2 types of feedback one day.
 	}
     }
 })
-
-
 
 // function response_listener(buttonid){
 //     console.log("listener heard "+buttonid);
@@ -522,14 +524,16 @@ function triad_trial(rocket1, rocket2, rocket3){
     
     this.drawMe = function(){
 	//Triad answers are always based on distance.
-	console.log(this.rocket1.flight_value);
-	console.log(
-	    (this.rocket1.flight_value > this.rocket2.flight_value && this.rocket1.flight_value > this.rocket3.flight_value) ?
-		this.rocket1.idstring : (this.rocket2.flight_value > this.rocket3.flight_value ? this.rocket2.idstring : this.rocket3.idstring)
-	)
+//	console.log(this.rocket1.flight_value);
+	// console.log(
+	//     (this.rocket1.flight_value > this.rocket2.flight_value && this.rocket1.flight_value > this.rocket3.flight_value) ?
+	// 	this.rocket1.idstring : (this.rocket2.flight_value > this.rocket3.flight_value ? this.rocket2.idstring : this.rocket3.idstring)
+	// )
 
-	live_ans = 	    (this.rocket1.flight_value > this.rocket2.flight_value && this.rocket1.flight_value > this.rocket3.flight_value) ?
-		this.rocket1.idstring : (this.rocket2.flight_value > this.rocket3.flight_value ? this.rocket2.idstring : this.rocket3.idstring)
+	live_ans = Math.max(this.rocket1.flight_value,this.rocket2.flight_value,this.rocket3.flight_value);
+	
+	//    (this.rocket1.flight_value > this.rocket2.flight_value && this.rocket1.flight_value > this.rocket3.flight_value) ?
+	//    this.rocket1.idstring : (this.rocket2.flight_value > this.rocket3.flight_value ? this.rocket2.idstring : this.rocket3.idstring)
 	
 	var jittersize = 50; //param. Linear format for now? Shift to circular?
 	var circlesize = 150;
@@ -650,13 +654,13 @@ function push_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     
     var ans;
     if(targ_feature=="fuel"){
-	ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].idstring : rockets[1].idstring;
+	ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
     }
     if(targ_feature =="base"){
-	ans = rockets[0].base > rockets[1].base ? rockets[0].idstring : rockets[1].idstring;
+	ans = rockets[0].base > rockets[1].base ? rockets[0].flight_value : rockets[1].flight_value;
     }    
     if(targ_feature =="distance"){
-	ans = rockets[0].base*rockets[0].fuel > rockets[1].base*rockets[1].fuel ? rockets[0].idstring : rockets[1].idstring;
+	ans = rockets[0].base*rockets[0].fuel > rockets[1].base*rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
     }
     
     var mytrial = new pair_trial(rockets[0],
@@ -670,62 +674,134 @@ function push_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
 var trialIndex = -1; //increment-first order in nextTrial() means trials[trialIndex] refers to the current trial.
 var trials = []; //still collect an array of all trials even when generating on the fly, because accessing trials[trialIndex] is so handy. (bad pattern?)
 
-//GRID-STYLE WALKTHROUGH SEQUENCE
+//Splashscreen collection:
 
-// var stepsize = .1;
 //  trials.push(new splashScreen("Which rocket has the best base?"))
 //  trials.push(new splashScreen("Which rocket has the best fuel?"))
 //  trials.push(new splashScreen("Which rocket will fly furthest?"))
 //  trials.push(new splashScreen("Which rocket will fly furthest?"))
 
+//grid style walkthrough
+function getTarg(){
+    var feature1 = Math.random()*.2+.2 //Magic numbers:  .2 is a margin to put all decoys in, .4 is far enough from .5 to build a sensible targ/comp pair.
+    var feature2 = 1 - feature1 //doesn't need to be 1-f1 but this makes for nice targ-comp pairs.
+    return shuffle([feature1, feature2]);
+}
+function getComp(atarg){ //just flips features
+    return [atarg[1], atarg[0]]
+}
+function getDominatedDecoy(atarg, xgap, ygap){
+    return [atarg[0]-xgap,atarg[1]-ygap]    
+}
+function getCompromiseDecoy(atarg){
+    var targvalue = atarg[0]*atarg[1]
+    var x = (atarg[0]+atarg[1])/2 //comp.x is targ.y, so this means midpoint between comp.x and targ.x
+    var y = targvalue/x;
+    return [x,y]
+}
+
+var comparisontypes = [
+    ["color","color","color"],
+    ["height","color","color"],
+    ["color","height","color"],
+    ["height","height","color"],
+    ["color","color","height"],
+    ["height","color","height"],
+    ["color", "height","height"],
+    ["height","height","height"]
+]
+var maxgap = .2;
+var hm_gapsteps = 5;
+var diststeps = []; for(var i=0;i<hm_gapsteps;i++){diststeps.push( (maxgap / hm_gapsteps)*(i+1))}
+//ok, so here's the (provisional) deal: for each comparisontype, a dominated decoy at each diststep, a compromise, and a rnd for attn/performance.
+//later: beef the reps x2 or x3?
+
+var stimcounter = 0;
+for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
+    stimcounter++;//count from 1
+    
+    //attraction/similarity stim
+    for(var diststeps_i = 0; diststeps_i<diststeps.length;diststeps_i++){
+	var targ = getTarg();
+	var comp = getComp(targ);
+	var decoy = getDominatedDecoy(targ, diststeps[diststeps_i], diststeps[diststeps_i])
+
+	
+	trials.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
+				    new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
+				    new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2])
+				   )
+		   );stimcounter++;
+
+	
+    }//end for each diststep
+
+    //compromise stim
+    var targ = getTarg();
+    var comp = getComp(targ);
+    var decoy = getCompromiseDecoy(targ);
+    trials.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
+				new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
+				new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2])
+			       )
+	       );stimcounter++;
+
+    //random stim
+    trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][0],"stim_"+stimcounter+"rnd"+comparisontypes[comp_i][0]),
+				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][1],"stim_"+stimcounter+"rnd2"+comparisontypes[comp_i][1]),
+				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][2],"stim_"+stimcounter+"rnd3"+comparisontypes[comp_i][2])
+			       )
+	       );stimcounter++;
+}
+
+
+
+
+//trials.push(new splashScreen("Which rocket has the best base?"))
+//  trials.push(new splashScreen("Which rocket has the best fuel?"))
+//  trials.push(new splashScreen("Which rocket will fly furthest?"))
+//  trials.push(new splashScreen("Which rocket will fly furthest?"))
+
+
 
 //MINI DEMO SEQUENCE
+//  trials.push(new splashScreen("Which rocket has the best base?"))
 
-trials.push(new splashScreen("Which rocket has the best base?"))
+//  push_a_pair_trial("base",0.2,"height", "height")
+//  push_a_pair_trial("base",0.2,"color", "color")
+//  push_a_pair_trial("base",0.2,"color", "height")
+//  push_a_pair_trial("base",0.2,"height", "color")
 
-push_a_pair_trial("base",0.2,"height", "height")
-push_a_pair_trial("base",0.2,"color", "color")
-push_a_pair_trial("base",0.2,"color", "height")
-push_a_pair_trial("base",0.2,"height", "color")
+//  trials.push(new splashScreen("Which rocket has the best fuel?"))
 
-trials.push(new splashScreen("Which rocket has the best fuel?"))
+// push_a_pair_trial("fuel",0.2,"height", "height")
+// push_a_pair_trial("fuel",0.2,"color", "color")
+// push_a_pair_trial("fuel",0.2,"color", "height")
+// push_a_pair_trial("fuel",0.2,"height", "color")
 
-push_a_pair_trial("fuel",0.2,"height", "height")
-push_a_pair_trial("fuel",0.2,"color", "color")
-push_a_pair_trial("fuel",0.2,"color", "height")
-push_a_pair_trial("fuel",0.2,"height", "color")
+// trials.push(new splashScreen("Which rocket will fly furthest?"))
 
-trials.push(new splashScreen("Which rocket will fly furthest?"))
+// push_a_pair_trial("distance",0.2,"height", "height")
+// push_a_pair_trial("distance",0.2,"color", "color")
+// push_a_pair_trial("distance",0.2,"color", "height")
+// push_a_pair_trial("distance",0.2,"height", "color")
 
-push_a_pair_trial("distance",0.2,"height", "height")
-push_a_pair_trial("distance",0.2,"color", "color")
-push_a_pair_trial("distance",0.2,"color", "height")
-push_a_pair_trial("distance",0.2,"height", "color")
+// trials.push(new splashScreen("Which rocket will fly furthest?"));
 
-trials.push(new splashScreen("Which rocket will fly furthest?"));
+// trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
+// 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo2"),
+// 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo3"))
+// 	   );
 
-trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
-			    new makeRocket(Math.random(),Math.random(),"height","bar_demo2"),
-			    new makeRocket(Math.random(),Math.random(),"height","bar_demo3"))
-	   );
+// trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
+// 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo2"),
+// 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo3"))
+// 	   );
 
-trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
-			    new makeRocket(Math.random(),Math.random(),"color","bar_demo2"),
-			    new makeRocket(Math.random(),Math.random(),"height","bar_demo3"))
-	   );
-
-trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"color","bar_demo1"),
-			    new makeRocket(Math.random(),Math.random(),"color","bar_demo2"),
-			    new makeRocket(Math.random(),Math.random(),"color","bar_demo3"))
-	   );
+// trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"color","bar_demo1"),
+// 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo2"),
+// 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo3"))
+// 	   );
 
 
 nextTrial();
-
-//demo:
-// var bar_demo = new makeRocket(Math.random(),Math.random(),"height","bar_demo");
-// var color_demo = new makeRocket(Math.random(),Math.random(),"color","color_demo");
-
-// var atrial = new pair_trial(bar_demo, color_demo);
-
-// atrial.drawMe();
