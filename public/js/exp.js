@@ -306,7 +306,7 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
     if(fuel_value <0 || fuel_value > 1)error("rocket fuel not in 0-1:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
     if(base_value <0 || base_value > 1)error("rocket base not in 0-1:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
     var legaldisplay = ["color","height"];
-    if(!legaldisplay.includes(display_type))error("rocket display not recognized:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
+//    if(!legaldisplay.includes(display_type))error("rocket display not recognized:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
 
     
     this.fuel = fuel_value;
@@ -482,41 +482,7 @@ function button_getter(id,top,left){//for 'this one' choice buttons only. (bad n
 	   "'>")
 }
 
-function pair_trial(rocket1, rocket2, text, answer){
-    this.rocket1 = rocket1;
-    this.rocket2 = rocket2;
-    this.text = text;
-    this.answer = answer;
-    
-    this.drawMe = function(){
-	var mid_x = document.getElementById("ubercanvas").width / 2;
-	var mid_y =  document.getElementById("ubercanvas").height / 2;
 
-	var gapwidth = 125; // gap each side of center, ie half the full gap width. in px.
-
-	live_ans = this.answer;
-	this.rocket1.drawMe(mid_x - gapwidth, mid_y);
-	this.rocket2.drawMe(mid_x + gapwidth, mid_y);
-
-	var canvas = document.getElementById("ubercanvas");
-	var ctx = canvas.getContext('2d');
-	ctx.font = "1.5em Arial";
-	ctx.fillStyle = "black";
-	ctx.textAlign = "center";
-	ctx.fillText(this.text, canvas.width/2, 100);
-
-	// abs_holder_div.innerHTML = button_getter(1,
-	// 					 (mid_y + buttonheight*1.5),
-	// 					 mid_x - gapwidth - (buttonwidth/2-15)
-	// 					)+
-	//     button_getter(2,
-	// 		  (mid_y + buttonheight*1.5),
-	// 		  mid_x + gapwidth - (buttonwidth/2-15)
-	// 		 );
-	
-    }
-
-}
 function triad_trial(rocket1, rocket2, rocket3){
     this.rocket1 = rocket1;
     this.rocket2 = rocket2;
@@ -622,11 +588,35 @@ function nextTrial(){
 
 
 //stim builder:
-function push_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
-    //targ_feature in ["fuel", "base"]
+function pair_trial(rocket1, rocket2, text, answer){ //Use 'get_pair_trial' to create an instance. :-( terrible smell?
+    this.rocket1 = rocket1;
+    this.rocket2 = rocket2;
+    this.text = text;
+    this.answer = answer;
+    
+    this.drawMe = function(){
+	var mid_x = document.getElementById("ubercanvas").width / 2;
+	var mid_y =  document.getElementById("ubercanvas").height / 2;
+
+	var gapwidth = 125; // gap each side of center, ie half the full gap width. in px.
+
+	live_ans = this.answer;
+	this.rocket1.drawMe(mid_x - gapwidth, mid_y);
+	this.rocket2.drawMe(mid_x + gapwidth, mid_y);
+
+	var canvas = document.getElementById("ubercanvas");
+	var ctx = canvas.getContext('2d');
+	ctx.font = "1.5em Arial";
+	ctx.fillStyle = "black";
+	ctx.textAlign = "center";
+	ctx.fillText(this.text, canvas.width/2, 100);
+    }
+}
+
+function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
+    //targ_feature in ["fuel", "base", "distance"]
     //targ_difference in 0-1
     //fueltype in ["color","height"]
-    
     var lower_value = Math.random()*(1-targ_difference)
     var upper_value = lower_value+targ_difference
 
@@ -666,7 +656,9 @@ function push_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     var mytrial = new pair_trial(rockets[0],
 				 rockets[1],
 				 "Which rocket has the best "+targ_feature+"?", ans);
-    trials.push(mytrial);
+
+    return(mytrial);
+    //trials.push(mytrial);
 }
 
 
@@ -674,14 +666,66 @@ function push_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
 var trialIndex = -1; //increment-first order in nextTrial() means trials[trialIndex] refers to the current trial.
 var trials = []; //still collect an array of all trials even when generating on the fly, because accessing trials[trialIndex] is so handy. (bad pattern?)
 
-//Splashscreen collection:
+//sub-chapter blocks so you can shuffle within blocks, then push everything to 'trials' in order for the presentation walkthrough using nextTrial()
+var hm_trainingpairs = 10;
+var pair_maxgap = .3;
+var pair_diststeps = [];
+for(var i=0;i<hm_trainingpairs;i++){
+    pair_diststeps.push((pair_maxgap / hm_trainingpairs)*(i+1))
+}
 
-//  trials.push(new splashScreen("Which rocket has the best base?"))
-//  trials.push(new splashScreen("Which rocket has the best fuel?"))
-//  trials.push(new splashScreen("Which rocket will fly furthest?"))
-//  trials.push(new splashScreen("Which rocket will fly furthest?"))
 
-//grid style walkthrough
+var basetraining = [];
+for(var i=0; i<hm_trainingpairs; i++){
+    basetraining.push(get_a_pair_trial("base",
+				       pair_diststeps[i],
+				       shuffle(["color","height"])[0],
+				       shuffle(["color","height"])[0]
+				      ))
+}
+
+var fueltraining = [];
+for(var i=0; i<hm_trainingpairs; i++){
+    fueltraining.push(get_a_pair_trial("fuel",
+		      pair_diststeps[i],
+		      "color",
+		      "color"
+				      ))
+        fueltraining.push(get_a_pair_trial("fuel",
+		      pair_diststeps[i],
+		      "color",
+		      "height"
+					  ))
+        fueltraining.push(get_a_pair_trial("fuel",
+		      pair_diststeps[i],
+		      "height",
+		      "height"
+					  ))
+}
+
+
+var distancepairs = [];
+for(var i=0; i<hm_trainingpairs; i++){
+distancepairs.push(get_a_pair_trial("distance",
+				    pair_diststeps[i],
+				    "color",
+				    "color"
+				   ))
+distancepairs.push(get_a_pair_trial("distance",
+				    pair_diststeps[i],
+				    "color",
+				    "height"
+				   ))
+distancepairs.push(get_a_pair_trial("distance",
+				    pair_diststeps[i],
+				    "height",
+				    "height"
+				   ))
+}
+
+var distancetriads = [];
+
+//grid style creation of triad stim
 function getTarg(){
     var feature1 = Math.random()*.2+.2 //Magic numbers:  .2 is a margin to put all decoys in, .4 is far enough from .5 to build a sensible targ/comp pair.
     var feature2 = 1 - feature1 //doesn't need to be 1-f1 but this makes for nice targ-comp pairs.
@@ -727,7 +771,7 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
 	var decoy = getDominatedDecoy(targ, diststeps[diststeps_i], diststeps[diststeps_i])
 
 	
-	trials.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
+	distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
 				    new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
 				    new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2])
 				   )
@@ -740,14 +784,14 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
     var targ = getTarg();
     var comp = getComp(targ);
     var decoy = getCompromiseDecoy(targ);
-    trials.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
+    distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
 				new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
 				new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2])
 			       )
 	       );stimcounter++;
 
     //random stim
-    trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][0],"stim_"+stimcounter+"rnd"+comparisontypes[comp_i][0]),
+    distancetriads.push(new triad_trial(new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][0],"stim_"+stimcounter+"rnd"+comparisontypes[comp_i][0]),
 				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][1],"stim_"+stimcounter+"rnd2"+comparisontypes[comp_i][1]),
 				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][2],"stim_"+stimcounter+"rnd3"+comparisontypes[comp_i][2])
 			       )
@@ -757,14 +801,27 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
 
 
 
-//trials.push(new splashScreen("Which rocket has the best base?"))
-//  trials.push(new splashScreen("Which rocket has the best fuel?"))
-//  trials.push(new splashScreen("Which rocket will fly furthest?"))
-//  trials.push(new splashScreen("Which rocket will fly furthest?"))
+//putting it all together:
+trials.push(new splashScreen("Which rocket has the best base?"))
+shuffle(basetraining);
+for(var i=0;i<basetraining.length;i++){trials.push(basetraining[i])}
+
+trials.push(new splashScreen("Which rocket has the best fuel?"))
+shuffle(fueltraining);
+for(var i=0;i<fueltraining.length;i++){trials.push(fueltraining[i])}
+
+trials.push(new splashScreen("Which rocket will fly furthest?"))
+shuffle(distancepairs);
+for(var i=0;i<distancepairs.length;i++){trials.push(distancepairs[i])}
+
+trials.push(new splashScreen("Which rocket will fly furthest?"))
+shuffle(distancetriads);
+for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 
 
 
-//MINI DEMO SEQUENCE
+
+//Not the exp: stim  DEMO SEQUENCE
 //  trials.push(new splashScreen("Which rocket has the best base?"))
 
 //  push_a_pair_trial("base",0.2,"height", "height")
