@@ -362,13 +362,11 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 
 	//body rect is the clickable bit:
 	live_clickables.push(function(click_x,click_y){
-	    //collision detection function
-	    // console.log("X:"+(click_x > x-bw && click_x < x-bw+bw*2))
-	    // console.log("Y:"+(click_y > y-bh && click_y < y+bh))
-	    console.log("pushing to clickable: "+(fuel_value*base_value));
+	    console.log(fuel_value);
+	    console.log(base_value);
+	    console.log(display_type);
 	    if(click_x > x-bw && click_x < x-bw+bw*2 &&
 	       click_y > y-bh && click_y < y+bh)return((fuel_value*base_value));
-	    
 	    return "miss";//click_x > x-bw && click_x < x-bw+bw*2 && click_y > y-bh && click_y < y+bh;
 
 
@@ -411,17 +409,34 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 }
 
 function feedback(what_kind){
-    //dev
-    // console.log(what_kind);
-    // return;
-    //dev
     
     if(!["correct","wrong"].includes(what_kind)){
+	//consider extending with other kinds eg no-comment.
 	error("bad feedback "+what_kind);
     }
 
-    //    return; //no visuals, no nextTrial(). For dev tests.
-    //    live_ans = "reset";
+    //Save data, you have a response!
+    var me = trials[trialIndex];
+
+    if(me.trialtype == "pair"){
+	var trialinfo = {
+	    base1 : me.rocket1.base,
+	    base2 : me.rocket2.base,
+	    fuel1 : me.rocket1.fuel,
+	    fuel2 : me.rocket2.fuel,
+	    fueltype1 : me.rocket1.type,
+	    fueltype2 : me.rocket2.type,
+	    ppnt_chose : "dragons"
+	}
+    }
+    if(me.trialtype == "triad"){
+	console.log(me.trialtype)
+    }
+    if(me.trialtype !="triad" && me.trialtype!="pair"){
+	Error("bad trialtype in feedback-save");
+    }
+    
+    //end save data: display feedback message.
     
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
@@ -445,8 +460,6 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
     for(var i=0;i<live_clickables.length;i++){
 	var clickresult = live_clickables[i](aclick.offsetX,aclick.offsetY);
 	if(clickresult!="miss"){
-	    console.log("clickresult is ");
-	    console.log(clickresult);
 	    feedback(clickresult==live_ans ? "correct" : "wrong") //not true/false because there might be more than 2 types of feedback one day.
 	}
     }
@@ -487,6 +500,7 @@ function triad_trial(rocket1, rocket2, rocket3){
     this.rocket1 = rocket1;
     this.rocket2 = rocket2;
     this.rocket3 = rocket3;
+    this.trialtype = "triad"
     
     this.drawMe = function(){
 	//Triad answers are always based on distance.
@@ -544,6 +558,7 @@ function triad_trial(rocket1, rocket2, rocket3){
 //trial objects should all have drawMe functions. Chuck 'em all in an array, walk through with nextTrial calling drawMe on each.
 function splashScreen(text){
     this.text = text;
+    this.trialtype = "splash"
     
     this.drawMe = function(){
 	var canvas = document.getElementById("ubercanvas");
@@ -593,6 +608,7 @@ function pair_trial(rocket1, rocket2, text, answer){ //Use 'get_pair_trial' to c
     this.rocket2 = rocket2;
     this.text = text;
     this.answer = answer;
+    this.trialtype = "pair"
     
     this.drawMe = function(){
 	var mid_x = document.getElementById("ubercanvas").width / 2;
@@ -637,14 +653,14 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     }
     
     if(!["fuel","base","distance"].includes(targ_feature)){
-	error("bad push a pair "+targ_feature+":"+targ_difference+":"+use_barfuel_r1+":"+use_barfuel_r2);
+	Error("bad push a pair "+targ_feature+":"+targ_difference+":"+use_barfuel_r1+":"+use_barfuel_r2);
     }
 
-    shuffle(rockets)
+    shuffle(rockets); //rocket1 drawn on left, rocket2 on right.
     
     var ans;
     if(targ_feature=="fuel"){
-	ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
+		ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
     }
     if(targ_feature =="base"){
 	ans = rockets[0].base > rockets[1].base ? rockets[0].flight_value : rockets[1].flight_value;
