@@ -53,27 +53,50 @@ app.get("/dashboard",function(req,res){
 });
 
 
-app.get("/getresponses",requireLogin,function(req,res){
+app.get("/getpairresponses",requireLogin,function(req,res){
     var pool = new pg.Pool({connectionString:process.env.DATABASE_URL});
     pool.connect(function(err,client,done){
-	client.query('select * from responses',function(err,result){
+	client.query('select * from pair_responses',function(err,result){
 	    if(err){
 		{console.error(err); res.send("Error "+err);}
 		}else{
 		    //TODO do something sensible if there are no results!
-		    var fields = Object.keys(JSON.parse(result.rows[0].responseobj));
+		    var fields = Object.keys(JSON.parse(result.rows[0].response));
 		    var responses = [];
 		    	   for(var i=0;i<result.rowCount;i++){
-			       responses.push(JSON.parse(result.rows[i].responseobj));
+			       responses.push(JSON.parse(result.rows[i].response));
 			   }
 
 		    var response_csv = json2csv({data: responses, fields:fields});
-		    res.attachment("responsedata.csv");
+		    res.attachment("pairresponsedata.csv");
 		    res.send(response_csv);
 		}
 	});//end query
     });
     pool.end();    
+});
+
+app.get("/gettriadresponses",requireLogin,function(req,res){
+    var pool = new pg.Pool({connectionString:process.env.DATABASE_URL});
+    pool.connect(function(err,client,done){
+	client.query('select * from triad_responses',function(err,result){
+	    if(err){
+		{console.error(err); res.send("Error "+err);}
+		}else{
+		    //TODO do something sensible if there are no results!
+		    var fields = Object.keys(JSON.parse(result.rows[0].response));
+		    var responses = [];
+		    	   for(var i=0;i<result.rowCount;i++){
+			       responses.push(JSON.parse(result.rows[i].response));
+			   }
+
+		    var response_csv = json2csv({data: responses, fields:fields});
+		    res.attachment("triadresponsedata.csv");
+		    res.send(response_csv);
+		}
+	});//end query
+    });
+    pool.end();
 });
 
 
@@ -148,14 +171,38 @@ app.post('/demographics',function(req,res){
 });
 
 
-app.post('/response',function(req,res){
+app.post('/pair_response',function(req,res){
 //save the response in db
     var pool = new pg.Pool(
 	{connectionString:process.env.DATABASE_URL}
     )    
     // connection using created pool
     pool.connect(function(err, client, done) {
-    	client.query('insert into responses values ($1,$2)', //NOTE this assumes table responses exists with cols 'time', 'responseobj' !
+    	client.query('insert into pair_responses values ($1,$2)', //NOTE this assumes table responses exists with cols 'time', 'responseobj' !
+		     [Date.now(),
+		     req.body.myresponse],
+    		     function(err, result){
+    			 if (err)
+    			 {console.error(err); res.send("Error " + err); } //For now the client just prints the error to the console. What's ideal?
+    			 else
+    			 { // response.render('pages/db', {results: result.rows});
+    			     res.send("success");
+    			 }
+    		     });//end query
+	done();
+    });
+    pool.end()
+});
+
+
+app.post('/triad_response',function(req,res){
+//save the response in db
+    var pool = new pg.Pool(
+	{connectionString:process.env.DATABASE_URL}
+    )    
+    // connection using created pool
+    pool.connect(function(err, client, done) {
+    	client.query('insert into triad_responses values ($1,$2)', //NOTE this assumes table responses exists with cols 'time', 'responseobj' !
 		     [Date.now(),
 		     req.body.myresponse],
     		     function(err, result){

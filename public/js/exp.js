@@ -3,6 +3,7 @@ var canvasheight = window.innerHeight-30;
 var groundlevel = window.innerHeight-155;
 var groundjitter = 100;
 
+var drawtime = "init";
 // function testcolor(athing){
 //     var canvas = document.getElementById("ubercanvas");
 //     var ctx = canvas.getContext('2d');
@@ -362,11 +363,19 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 
 	//body rect is the clickable bit:
 	live_clickables.push(function(click_x,click_y){
-	    console.log(fuel_value);
-	    console.log(base_value);
-	    console.log(display_type);
 	    if(click_x > x-bw && click_x < x-bw+bw*2 &&
-	       click_y > y-bh && click_y < y+bh)return((fuel_value*base_value));
+	       click_y > y-bh && click_y < y+bh){
+		return(
+		    {fuel:fuel_value,
+		     base:base_value,
+		     displaytype:display_type,
+		     idstring:idstring,
+		     flight:(fuel_value*base_value)
+		    }
+		);
+	    }
+
+		//return((fuel_value*base_value));
 	    return "miss";//click_x > x-bw && click_x < x-bw+bw*2 && click_y > y-bh && click_y < y+bh;
 
 
@@ -409,35 +418,11 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 }
 
 function feedback(what_kind){
-    
+    live_clickables = [];
     if(!["correct","wrong"].includes(what_kind)){
 	//consider extending with other kinds eg no-comment.
 	error("bad feedback "+what_kind);
-    }
-
-    //Save data, you have a response!
-    var me = trials[trialIndex];
-
-    if(me.trialtype == "pair"){
-	var trialinfo = {
-	    base1 : me.rocket1.base,
-	    base2 : me.rocket2.base,
-	    fuel1 : me.rocket1.fuel,
-	    fuel2 : me.rocket2.fuel,
-	    fueltype1 : me.rocket1.type,
-	    fueltype2 : me.rocket2.type,
-	    ppnt_chose : "dragons"
-	}
-    }
-    if(me.trialtype == "triad"){
-	console.log(me.trialtype)
-    }
-    if(me.trialtype !="triad" && me.trialtype!="pair"){
-	Error("bad trialtype in feedback-save");
-    }
-    
-    //end save data: display feedback message.
-    
+    }   
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -460,9 +445,63 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
     for(var i=0;i<live_clickables.length;i++){
 	var clickresult = live_clickables[i](aclick.offsetX,aclick.offsetY);
 	if(clickresult!="miss"){
-	    feedback(clickresult==live_ans ? "correct" : "wrong") //not true/false because there might be more than 2 types of feedback one day.
+	    //you have a live response! save the data:
+    var me = trials[trialIndex];
+
+    if(me.trialtype == "pair"){
+	var trialinfo = {
+	    base1 : me.rocket1.base,
+	    base2 : me.rocket2.base,
+	    fuel1 : me.rocket1.fuel,
+	    fuel2 : me.rocket2.fuel,
+	    fueltype1 : me.rocket1.type,
+	    fueltype2 : me.rocket2.type,
+	    choice_base : clickresult.base,
+	    choice_fuel : clickresult.fuel,
+	    choice_fueltype : clickresult.displaytype,
+	    drawtime: drawtime,
+	    responsetime: Date.now()
 	}
+
+	console.log("save: "+JSON.stringify(trialinfo));
+	$.post('/pair_response',{myresponse:JSON.stringify(trialinfo)},function(success){
+    	console.log(success);//For now server returns the string "success" for success, otherwise error message.
+	});
+
+
     }
+    if(me.trialtype == "triad"){
+	var trialinfo = {
+	    base1 : me.rocket1.base,
+	    base2 : me.rocket2.base,
+	    base3 : me.rocket3.base,
+	    fuel1 : me.rocket1.fuel,
+	    fuel2 : me.rocket2.fuel,
+	    fuel3 : me.rocket3.fuel,
+	    fueltype1 : me.rocket1.type,
+	    fueltype2 : me.rocket2.type,
+	    fueltype3 : me.rocket3.type,
+	    choice_base : clickresult.base,
+	    choice_fuel : clickresult.fuel,
+	    choice_fueltype : clickresult.displaytype,
+	    drawtime: drawtime,
+	    responsetime: Date.now()
+	}
+	console.log("save: "+JSON.stringify(trialinfo));
+	$.post('/triad_response',{myresponse:JSON.stringify(trialinfo)},function(success){
+    	console.log(success);//For now server returns the string "success" for success, otherwise error message.
+	});
+
+    }
+    if(me.trialtype !="triad" && me.trialtype!="pair"){
+	Error("bad trialtype in feedback-save");
+    }
+	    //end save data, do feedback.
+	    //using flight time as an id is hacky but allows multiple correct answers in triads, which is what you want. Smells bad but works.
+	    feedback(clickresult.flight==live_ans ? "correct" : "wrong") //not true/false because there might be more than 2 types of feedback one day.
+	    break;
+	}//end 'click is not a miss'
+    }//end for each live clickable
 })
 
 // function response_listener(buttonid){
@@ -503,6 +542,7 @@ function triad_trial(rocket1, rocket2, rocket3){
     this.trialtype = "triad"
     
     this.drawMe = function(){
+	drawtime = Date.now();
 	//Triad answers are always based on distance.
 //	console.log(this.rocket1.flight_value);
 	// console.log(
@@ -588,6 +628,7 @@ function splashScreen(text){
 function nextTrial(){
     trialIndex++;
     live_clickables = [];
+    drawtime = "init";
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -611,6 +652,7 @@ function pair_trial(rocket1, rocket2, text, answer){ //Use 'get_pair_trial' to c
     this.trialtype = "pair"
     
     this.drawMe = function(){
+	drawtime = Date.now();
 	var mid_x = document.getElementById("ubercanvas").width / 2;
 	var mid_y =  document.getElementById("ubercanvas").height / 2;
 
@@ -636,6 +678,12 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     var lower_value = Math.random()*(1-targ_difference)
     var upper_value = lower_value+targ_difference
 
+    var typeswapper = fueltype1; //randomize here so that passing types 'height', 'color' is the same as 'color', 'height'
+    if(Math.random()<.5){
+	fueltype1 = fueltype2;
+	fueltype2 = typeswapper;
+    }
+    
     var rockets = [];
 
     if(targ_feature == "fuel"){
@@ -707,7 +755,7 @@ for(var i=0; i<hm_trainingpairs; i++){
 		      "color",
 		      "color"
 				      ))
-        fueltraining.push(get_a_pair_trial("fuel",
+	fueltraining.push(get_a_pair_trial("fuel",
 		      pair_diststeps[i],
 		      "color",
 		      "height"

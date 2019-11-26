@@ -30,11 +30,11 @@ $.post("/login",{token:document.getElementById('logintextarea').value},function(
 
 	<% if(auth=="notyet"){%>
 	<p>Login key:<textarea id='logintextarea'></textarea><button onclick='login()'>Login</button></br>
-	<button id='demographicsbutton' onclick="getData('demographics')" disabled>download demographics</button></br>
-	<button id='responsesbutton' onclick="getData('responses')" disabled >download responses</button>
+Get responses here.
 	<%}else{%>
 	<button id='demographicsbutton' onclick="getData('demographics')">download demographics</button></br>
-	<button id='responsesbutton' onclick="getData('responses')">download responses</button>
+	<button id='responsesbutton' onclick="getData('pairresponses')">download pair responses</button>
+		<button id='responsesbutton' onclick="getData('triadresponses')">download triad responses</button>
 	<%}%>
       </div>
   </body>
