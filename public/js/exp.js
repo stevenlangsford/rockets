@@ -472,6 +472,7 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
     }
     if(me.trialtype == "triad"){
 	var trialinfo = {
+	    presentation : me.presentation_order,
 	    base1 : me.rocket1.base,
 	    base2 : me.rocket2.base,
 	    base3 : me.rocket3.base,
@@ -540,6 +541,7 @@ function triad_trial(rocket1, rocket2, rocket3){
     this.rocket2 = rocket2;
     this.rocket3 = rocket3;
     this.trialtype = "triad"
+    this.presentation_order = shuffle([0,1,2])
     
     this.drawMe = function(){
 	drawtime = Date.now();
@@ -557,8 +559,11 @@ function triad_trial(rocket1, rocket2, rocket3){
 	
 	var jittersize = 50; //param. Linear format for now? Shift to circular?
 	var circlesize = 150;
+
+	//rnd_order created from canon_order with reference to this.presentation_order so that presentation_order can be saved conveniently.
+	var canon_order = [this.rocket1,this.rocket2,this.rocket3]
+	var rnd_order = [canon_order[presentation_order[0]],canon_order[presentation_order[1]],canon_order[presentation_order[2]]];
 	
-	var rnd_order = shuffle([this.rocket1,this.rocket2,this.rocket3]);
 	var canvas = document.getElementById("ubercanvas");
 
 	var mid_x = canvas.width/2;

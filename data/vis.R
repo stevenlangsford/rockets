@@ -1,0 +1,50 @@
+library(tidyverse)
+source("readData.R")
+
+everytriad_plot <- ggplot(triadsdf) +
+    geom_point(aes(x = base1,y = fuel1, shape = fueltype1, color = "targ")) +
+    geom_point(aes(x = base2,y = fuel2, shape = fueltype2, color = "comp")) +
+    geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy"))+
+    facet_wrap(.~rolechosen)
+
+single_triad_plot <- function(rowid) {
+    pointsize <- 5;
+
+    ggplot(triadsdf[rowid, ]) +
+        geom_point(aes(x = choice_base,
+                       y = choice_fuel,
+                       shape = fueltype1,
+                       color = "chosen"),
+                   size = pointsize + 2) +
+        geom_point(aes(x = base1,
+                       y = fuel1,
+                       shape = fueltype1,
+                       color = "targ"),
+                   size = pointsize) +
+        geom_point(aes(x = base2,
+                       y = fuel2,
+                       shape = fueltype2,
+                       color = "comp"),
+                   size = pointsize) +
+        geom_point(aes(x = base3,
+                       y = fuel3,
+                       shape = fueltype3,
+                       color = "decoy"),
+                   size = pointsize) +
+        ggtitle(
+            paste(
+                paste0("targ=", with(triadsdf[rowid, ],
+                                     signif(base1 * fuel1, 3))),
+                paste0("comp=", with(triadsdf[rowid, ],
+                                     signif(base2 * fuel2, 3))),
+                paste0("decoy=", with(triadsdf[rowid, ],
+                                      signif(base3 * fuel3, 3)))
+    )
+    )
+}
+
+
+##Organize by which option chosen & plot those together?
+##Orgainze by trial type and plot which option chosen?
+   ##--small multiples for comparison types?
+##Accuracy data for pairs, triads where there is a good answer?
