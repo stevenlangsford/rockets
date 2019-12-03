@@ -37,7 +37,7 @@ for (i in 1:nrow(pairsdf)) {
         pairsdf[i, "targfeature_diff"] <-
             with(pairsdf[i, ], abs(fuel1 - fuel2))
                 pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
-                                         choice_base == max(fuel1, fuel2))
+                                         choice_fuel == max(fuel1, fuel2))
     }
     if (pairsdf$questiontype[i] == "distance") {
         pairsdf[i, "targfeature_diff"] <-
@@ -89,7 +89,9 @@ triadsdf$decoydist <- sapply(1:nrow(triadsdf), function(i) {
           (triadsdf[i, "fuel1"] - triadsdf[i, "fuel3"])^2
          ))#go learn some purrr ffs.
 })
-
+triadsdf$comparisontype <- paste0(triadsdf$fueltype1,
+                                  triadsdf$fueltype2,
+                                  triadsdf$fueltype3)
 
 ##namespace cleanup
 rm("rolechosen")

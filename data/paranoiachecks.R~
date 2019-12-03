@@ -1,0 +1,3 @@
+source("readData.R")
+
+table(pairsdf$comparisontype, pairsdf$questiontype)

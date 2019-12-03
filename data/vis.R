@@ -1,4 +1,5 @@
 library(tidyverse)
+library(patchwork)
 source("readData.R")
 
 everytriad_plot <- ggplot(triadsdf) +
@@ -6,7 +7,16 @@ everytriad_plot <- ggplot(triadsdf) +
     geom_point(aes(x = base2,y = fuel2, shape = fueltype2, color = "comp")) +
     geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy"))
 
-pairaccuracy_hist <- ggplot(pairsdf, aes(x = targfeature_diff, fill=ans_correct))+geom_histogram(alpha=.5)+facet_wrap(.~comparisontype)
+pair_accuracy_hists <- ggplot()
+for (q in unique(pairsdf$questiontype)) {
+    pair_accuracy_hists <- pair_accuracy_hists +
+        ggplot(pairsdf %>% filter(questiontype == q),
+               aes(x = targfeature_diff, fill = comparisontype)) +
+        geom_histogram() +
+        facet_grid(ans_correct~comparisontype) +
+        ggtitle(q)+
+        guides(fill=FALSE)
+}
 
 single_triad_plot <- function(rowid) {
     pointsize <- 5;

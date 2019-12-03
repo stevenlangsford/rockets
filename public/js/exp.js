@@ -2,6 +2,7 @@ var canvaswidth = window.innerWidth-30;
 var canvasheight = window.innerHeight-30;
 var groundlevel = window.innerHeight-155;
 var groundjitter = 100;
+var ppntID = localStorage.getItem("ppntID");
 
 var drawtime = "init";
 // function testcolor(athing){
@@ -446,10 +447,10 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
 	if(clickresult!="miss"){
 	    //you have a live response! save the data:
     var me = trials[trialIndex];
-
 	    //this is shite, one of the advantanges of this design pattern was saving trial objs directly, why are you throwing that away?
     if(me.trialtype == "pair"){
 	var trialinfo = {
+	    ppntID : ppntID,
 	    base1 : me.rocket1.base,
 	    base2 : me.rocket2.base,
 	    fuel1 : me.rocket1.fuel,
@@ -463,16 +464,14 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
 	    drawtime: drawtime,
 	    responsetime: Date.now()
 	}
-
 	console.log("save: "+JSON.stringify(trialinfo));
 	$.post('/pair_response',{myresponse:JSON.stringify(trialinfo)},function(success){
     	console.log(success);//For now server returns the string "success" for success, otherwise error message.
 	});
-
-
     }
     if(me.trialtype == "triad"){
 	var trialinfo = {
+	    ppntID : ppntID,
 	    triadtype : me.triadtype,
 	    presentation : me.presentation_order,
 	    base1 : me.rocket1.base,
