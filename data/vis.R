@@ -4,8 +4,9 @@ source("readData.R")
 everytriad_plot <- ggplot(triadsdf) +
     geom_point(aes(x = base1,y = fuel1, shape = fueltype1, color = "targ")) +
     geom_point(aes(x = base2,y = fuel2, shape = fueltype2, color = "comp")) +
-    geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy"))+
-    facet_wrap(.~rolechosen)
+    geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy"))
+
+pairaccuracy_hist <- ggplot(pairsdf, aes(x = targfeature_diff, fill=ans_correct))+geom_histogram(alpha=.5)+facet_wrap(.~comparisontype)
 
 single_triad_plot <- function(rowid) {
     pointsize <- 5;
@@ -44,7 +45,51 @@ single_triad_plot <- function(rowid) {
 }
 
 
-##Organize by which option chosen & plot those together?
-##Orgainze by trial type and plot which option chosen?
-   ##--small multiples for comparison types?
-##Accuracy data for pairs, triads where there is a good answer?
+arbrocket_triads <- triadsdf
+for (i in 1:nrow(triadsdf)) {
+
+#    print(i / nrow(triadsdf)*100);
+    
+    ##arbitrary target point base=.3 .fuel=.7
+    arb_base <- .3;
+    arb_fuel <- .7
+    ##escape df frame
+    base1 <- triadsdf[i, "base1"]
+    base2 <- triadsdf[i, "base2"]
+    base3 <- triadsdf[i, "base3"]
+    fuel1 <- triadsdf[i, "fuel1"]
+    fuel2 <- triadsdf[i, "fuel2"]
+    fuel3 <- triadsdf[i, "fuel3"]
+    ##which rocket is closest to the arb point?
+    dist1 = sqrt((base1 - arb_base)^2 + (fuel1 - arb_fuel)^2)
+    dist2 = sqrt((base2 - arb_base)^2 + (fuel2 - arb_fuel)^2)
+    dist3 = sqrt((base3 - arb_base)^2 + (fuel3 - arb_fuel)^2)
+
+    ##Get the base and fuel translations needed to put a rocket on arb.
+    if (dist1 <= dist2 && dist1 <= dist3) {
+        baseshift <- arb_base - base1
+        fuelshift <- arb_fuel - fuel1
+    }
+    if (dist2 <= dist1 && dist2 <= dist3) {
+        baseshift <- arb_base - base2
+        fuelshift <- arb_fuel - fuel2
+    }
+    if (dist3 <= dist1 && dist3 <= dist2) {
+        baseshift <- arb_base - base3
+        fuelshift <- arb_fuel - fuel3
+    }
+
+    arbrocket_triads[i, "base1"] <- arbrocket_triads[i, "base1"] + baseshift
+    arbrocket_triads[i, "base2"] <- arbrocket_triads[i, "base2"] + baseshift
+    arbrocket_triads[i, "base3"] <- arbrocket_triads[i, "base3"] + baseshift
+    arbrocket_triads[i, "fuel1"] <- arbrocket_triads[i, "fuel1"] + fuelshift
+    arbrocket_triads[i, "fuel2"] <- arbrocket_triads[i, "fuel2"] + fuelshift
+    arbrocket_triads[i, "fuel3"] <- arbrocket_triads[i, "fuel3"] + fuelshift
+}#end for each row in triadsdf
+
+
+## ggplot(arbrocket_triads) +
+##     geom_point(aes(x = base1,y = fuel1, shape = fueltype1, color = "targ")) +
+##     geom_point(aes(x = base2,y = fuel2, shape = fueltype2, color = "comp")) +
+##     geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy")) +
+##     geom_point(aes(x = .3, y = .7), color = "black")

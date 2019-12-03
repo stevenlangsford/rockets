@@ -329,7 +329,6 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 	var canvas = document.getElementById('ubercanvas');
 	var ctx = canvas.getContext('2d');
 
-
 	var stimsize = 2.5; //Multiply all drawing distances by this.
 	
 	var bw = 10*stimsize; //bodywidth (halved, center-to-edge dist)
@@ -448,6 +447,7 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
 	    //you have a live response! save the data:
     var me = trials[trialIndex];
 
+	    //this is shite, one of the advantanges of this design pattern was saving trial objs directly, why are you throwing that away?
     if(me.trialtype == "pair"){
 	var trialinfo = {
 	    base1 : me.rocket1.base,
@@ -459,6 +459,7 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
 	    choice_base : clickresult.base,
 	    choice_fuel : clickresult.fuel,
 	    choice_fueltype : clickresult.displaytype,
+	    questiontype : me.text,
 	    drawtime: drawtime,
 	    responsetime: Date.now()
 	}
@@ -472,6 +473,7 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
     }
     if(me.trialtype == "triad"){
 	var trialinfo = {
+	    triadtype : me.triadtype,
 	    presentation : me.presentation_order,
 	    base1 : me.rocket1.base,
 	    base2 : me.rocket2.base,
@@ -536,33 +538,25 @@ function button_getter(id,top,left){//for 'this one' choice buttons only. (bad n
 }
 
 
-function triad_trial(rocket1, rocket2, rocket3){
+function triad_trial(rocket1, rocket2, rocket3, triadtype){
     this.rocket1 = rocket1;
     this.rocket2 = rocket2;
     this.rocket3 = rocket3;
-    this.trialtype = "triad"
+    this.trialtype = "triad";
+    this.triadtype = triadtype; //bookkeeping only, not sure if this smells? You probably want to filter on this though at some point?
     this.presentation_order = shuffle([0,1,2])
-    
+
     this.drawMe = function(){
 	drawtime = Date.now();
-	//Triad answers are always based on distance.
-//	console.log(this.rocket1.flight_value);
-	// console.log(
-	//     (this.rocket1.flight_value > this.rocket2.flight_value && this.rocket1.flight_value > this.rocket3.flight_value) ?
-	// 	this.rocket1.idstring : (this.rocket2.flight_value > this.rocket3.flight_value ? this.rocket2.idstring : this.rocket3.idstring)
-	// )
 
-	live_ans = Math.max(this.rocket1.flight_value,this.rocket2.flight_value,this.rocket3.flight_value);
-	
-	//    (this.rocket1.flight_value > this.rocket2.flight_value && this.rocket1.flight_value > this.rocket3.flight_value) ?
-	//    this.rocket1.idstring : (this.rocket2.flight_value > this.rocket3.flight_value ? this.rocket2.idstring : this.rocket3.idstring)
-	
-	var jittersize = 50; //param. Linear format for now? Shift to circular?
+	live_ans = Math.max(this.rocket1.flight_value,this.rocket2.flight_value,this.rocket3.flight_value); //communicate with click listener via global var. Ouch!
+		
+	var jittersize = 50; //presentation free params? Possibly impactful though.
 	var circlesize = 150;
 
-	//rnd_order created from canon_order with reference to this.presentation_order so that presentation_order can be saved conveniently.
-	var canon_order = [this.rocket1,this.rocket2,this.rocket3]
-	var rnd_order = [canon_order[presentation_order[0]],canon_order[presentation_order[1]],canon_order[presentation_order[2]]];
+	//rnd_order created from canon_order with reference to this.presentation_order mainly for data-save convenience. 1,2,3 always means targ, comp, decoy, presentation order is randomized and the random order is saved along with the other attributes of this trial.
+	var canon_order = [this.rocket1,this.rocket2,this.rocket3];
+	var rnd_order = [canon_order[this.presentation_order[0]],canon_order[this.presentation_order[1]],canon_order[this.presentation_order[2]]];
 	
 	var canvas = document.getElementById("ubercanvas");
 
@@ -842,7 +836,8 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
 	
 	distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
 				    new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
-				    new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2])
+					    new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2]),
+					    "dominated_decoy"
 				   )
 		   );stimcounter++;
 
@@ -855,14 +850,16 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
     var decoy = getCompromiseDecoy(targ);
     distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
 				new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
-				new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2])
+					new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2]),
+					"compromise"
 			       )
 	       );stimcounter++;
 
     //random stim
     distancetriads.push(new triad_trial(new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][0],"stim_"+stimcounter+"rnd"+comparisontypes[comp_i][0]),
 				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][1],"stim_"+stimcounter+"rnd2"+comparisontypes[comp_i][1]),
-				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][2],"stim_"+stimcounter+"rnd3"+comparisontypes[comp_i][2])
+					new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][2],"stim_"+stimcounter+"rnd3"+comparisontypes[comp_i][2]),
+					"random"
 			       )
 	       );stimcounter++;
 }
@@ -931,3 +928,19 @@ for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 
 
 nextTrial();
+
+// function draw_stim_square(){
+//     //manual: set stimsize in makeRocket drawMe to 1, choose a draw type for the makerocket loop here.
+//     var canvas = document.getElementById("ubercanvas");
+//     var ctx = canvas.getContext('2d');
+//     ctx.clearRect(0,0,canvas.width,canvas.height);
+//     abs_holder_div.innerHTML = "";
+
+//     var cellwidth = 55
+//     for(myfuel = .1; myfuel<1;myfuel=myfuel+.1){
+// 	for(mybase = .1; mybase<1;mybase=mybase+.1){
+// 	    var me = new makeRocket(myfuel,mybase,"color","demoRocket");
+// 	    me.drawMe(mybase*10*cellwidth,cellwidth*10-(myfuel*10*cellwidth)+cellwidth);
+// 	}
+//     }
+// }
