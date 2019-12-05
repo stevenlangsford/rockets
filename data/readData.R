@@ -4,7 +4,8 @@ theme_set(theme_light())
 
 demographicsdf <- read.csv("raw/demographicsdata.csv")
 pairsdf <- read.csv("raw/pairresponsedata.csv")
-triadsdf <- read.csv("raw/triadresponsedata.csv")
+triadsdf <- read.csv("raw/triadresponsedata.csv") %>%
+    mutate(triadtype = as.character(triadtype))
 
 ##TODO. Exclusion criteria: accuracy on trials-with-an-answer?
 
@@ -12,6 +13,8 @@ triadsdf <- read.csv("raw/triadresponsedata.csv")
 ##adding some derived info to the dfs:
 
 ##pairs
+levels(pairsdf$questiontype) <- c("base", "distance", "fuel")
+
 for (i in 1:nrow(pairsdf)) {
 pairsdf[i,"comparisontype"] <- paste0(
     sort(
@@ -20,13 +23,10 @@ pairsdf[i,"comparisontype"] <- paste0(
           )
     ),
     collapse = ":")
-}
 
-##rename for convenience:
-##levels(pairsdf$questiontype) #base, distance, fuel
-levels(pairsdf$questiontype) <- c("base", "distance", "fuel")
+pairsdf[i, "deliberationtime"] <-
+    pairsdf[i, "responsetime"] - pairsdf[i, "drawtime"]
 
-for (i in 1:nrow(pairsdf)) {
     if (pairsdf$questiontype[i] == "base") {
         pairsdf[i, "targfeature_diff"] <-
             with(pairsdf[i, ], abs(base1 - base2))
@@ -92,6 +92,18 @@ triadsdf$decoydist <- sapply(1:nrow(triadsdf), function(i) {
 triadsdf$comparisontype <- paste0(triadsdf$fueltype1,
                                   triadsdf$fueltype2,
                                   triadsdf$fueltype3)
+
+
+for (i in 1:nrow(triadsdf)) {
+triadsdf[i, "deliberationtime"] <-
+    triadsdf[i, "responsetime"] - triadsdf[i, "drawtime"]
+if (triadsdf[i, "triadtype"] == "dominated_decoy"){
+    triadsdf[i, "triadtype"] <- paste("dominated_decoy",
+                                      signif(triadsdf[i, "decoydist"],4),
+                                      sep = "_")
+}
+
+}
 
 ##namespace cleanup
 rm("rolechosen")

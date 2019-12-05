@@ -2,21 +2,69 @@ library(tidyverse)
 library(patchwork)
 source("readData.R")
 
-everytriad_plot <- ggplot(triadsdf) +
-    geom_point(aes(x = base1,y = fuel1, shape = fueltype1, color = "targ")) +
-    geom_point(aes(x = base2,y = fuel2, shape = fueltype2, color = "comp")) +
-    geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy"))
+saveplots <- FALSE
+deliberation_cutoff <- .9 #quantile to cut deliberation time hists at
 
-pair_accuracy_hists <- ggplot()
+##PAIRS
+everytriad_plot <- ggplot(triadsdf) +
+    geom_point(aes(x = base1, y = fuel1, shape = fueltype1, color = "targ")) +
+    geom_point(aes(x = base2, y = fuel2, shape = fueltype2, color = "comp")) +
+    geom_point(aes(x = base3, y = fuel3, shape = fueltype3, color = "decoy"))
+
+pair_accuracy_bydistance <- ggplot()
 for (q in unique(pairsdf$questiontype)) {
-    pair_accuracy_hists <- pair_accuracy_hists +
+    pair_accuracy_bydistance <- pair_accuracy_bydistance +
         ggplot(pairsdf %>% filter(questiontype == q),
                aes(x = targfeature_diff, fill = comparisontype)) +
         geom_histogram() +
         facet_grid(ans_correct~comparisontype) +
-        ggtitle(q)+
-        guides(fill=FALSE)
+        ggtitle(q) +
+        guides(fill = FALSE)
 }
+if (saveplots) {
+    ggsave(pair_accuracy_bydistance,
+           file = "plots/pair_accuracy_bydistance.png", width = 15)
+}
+
+pair_accuracy_byppnt <- ggplot(pairsdf %>%
+       group_by(ppntID,questiontype,comparisontype) %>%
+       summarize(p_correct = mean(ans_correct)),
+       aes(x = p_correct)) +
+       geom_histogram() +
+    facet_grid(questiontype~comparisontype)
+
+if (saveplots) {
+    ggsave(pair_accuracy_byppnt,
+           file = "plots/pair_accuracy_byppnt.png", width = 15)
+}
+
+
+pair_rt_hist <- ggplot(pairsdf %>%
+                       filter(deliberationtime <
+                              quantile(pairsdf$deliberationtime,
+                                       deliberation_cutoff)),
+       aes(x = deliberationtime)) +
+    geom_histogram() +
+    ggtitle(paste0("Pair response times (<", deliberation_cutoff, " quantile)"))
+
+if (saveplots) {
+    ggsave(pair_rt_hist, file = "plots/pair_RT_hist.png", width = 15)
+}
+
+
+
+##TRIADS
+
+triad_rt_hist <- ggplot(triadsdf %>%
+       filter(deliberationtime < quantile(triadsdf$deliberationtime,
+                                          deliberation_cutoff)),
+       aes(x = deliberationtime)) +
+    geom_histogram() +
+    ggtitle(paste0("Triad response times (<", deliberation_cutoff, " quantile)"))
+if (saveplots) {
+ggsave(triad_rt_hist, file = "plots/triad_RT_hist.png", width = 15)
+}
+
 
 single_triad_plot <- function(rowid) {
     pointsize <- 5;
@@ -96,6 +144,33 @@ for (i in 1:nrow(triadsdf)) {
     arbrocket_triads[i, "fuel2"] <- arbrocket_triads[i, "fuel2"] + fuelshift
     arbrocket_triads[i, "fuel3"] <- arbrocket_triads[i, "fuel3"] + fuelshift
 }#end for each row in triadsdf
+
+
+
+dominated_decoy_roleprefs <-
+    ggplot(triadsdf %>% filter(startsWith(triadtype,"dominated")),
+       aes(x = rolechosen, fill = rolechosen)) +
+    geom_bar() +
+    facet_grid(comparisontype~triadtype)
+
+if (saveplots) {
+    ggsave(dominated_decoy_roleprefs,
+           file = "plots/dominated_decoy_roleprefs.png",
+           width = 15, height = 20)
+}
+
+compromise_roleprefs <-
+    ggplot(triadsdf %>% filter(startsWith(triadtype,"compromise")),
+       aes(x = rolechosen, fill = rolechosen)) +
+    geom_bar() +
+    facet_grid(comparisontype~triadtype)
+
+if (saveplots) {
+    ggsave(compromise_roleprefs,
+           file = "plots/compromise_roleprefs.png",
+           width = 15, height = 20)
+}
+
 
 
 ## ggplot(arbrocket_triads) +
