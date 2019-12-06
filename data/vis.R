@@ -172,6 +172,22 @@ if (saveplots) {
 }
 
 
+pairs_timingbydifficulty <- ggplot(pairsdf %>%
+       filter(deliberationtime <
+              quantile(pairsdf$deliberationtime, deliberation_cutoff)),
+       aes(x = targfeature_diff,
+           y = deliberationtime,
+#           color = questiontype,
+           color = paste0(fueltype1, fueltype2))) +
+    geom_point() +
+    facet_grid(questiontype~.)
+
+
+if (saveplots) {
+    ggsave(pairs_timingbydifficulty,
+           file = "plots/pairs_timingbydifficulty.png",
+           width = 15)
+}
 
 ## ggplot(arbrocket_triads) +
 ##     geom_point(aes(x = base1,y = fuel1, shape = fueltype1, color = "targ")) +

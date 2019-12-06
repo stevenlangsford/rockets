@@ -3,7 +3,7 @@ localStorage.setItem("ppntID",ppntID); //cookie alternative, retrive with localS
 
 var dev = true;//used only in instuctionlist (immediately below) for the moment, could consider putting it in localStorage though and having it trigger verbosity later. Set to false if public-facing.
 var instructionindex = 0;
-var instructionlist = [dev ? "Development version: <button onclick='startExp()'>Skip instructions</button>" : "Hi! These are the instructions. Please read them carefully, there will be a short quiz at the end.", "This is part of a study being run by [INSTITUTION]. By clicking 'Next', you are agreeing to take part in it. You should know that you're free to withdraw at any time (although you'll only be paid on completion), and that although data gained from this study may be published, you will not be identified and your personal details will not be divulged, nor will anything be linked to your [RELEVANT ID].</br><span style=\"font-size:.8em\">Please direct any questions about this study to the principle investigator, [NAME:CONTACT]. For any questions regarding the ethics of the study, please contact the convener of the Subcommittee for Human Research in the School of Psychology at [INSTITUTION, NAME, CONTACT].</span>","This study takes about [TIME] minutes, please only continue if you have [TIME] free without interruptions.",
+var instructionlist = [dev ? "Development version: <button onclick='startExp()'>Skip instructions</button>" : "Hi! These are the instructions. Please read them carefully, there will be a short quiz at the end.", "This is part of a study being run by the University of Michigan. By clicking 'Next', you are agreeing to take part in it. To participate, you must be over 18. You should know that you're free to withdraw at any time (although you'll only be paid on completion), and that although data gained from this study may be published or viewed by University of Michigan staff and relevant government offices, you will not be identified and your personal details will not be divulged, nor will anything be linked to your Turk Id. Any identifiable data will be used for administration only and deleted on completion of the study, non-identifiable data may be used in future research. </br><span style=\"font-size:.8em\">Please direct any questions about this study to Steven Langsford, reachable at <strong>slangsfo at umich dot edu</strong>. The principle investigator is Prof. Richard Lewis. If you have concerns regarding the ethics of this study and don't want to contact the investigators directly, you can contact the Health Sciences and Behavioral Sciences review board at irbhsbs at umich dot edu or phone: (734) 936-0933 or toll free, (866) 936-0933</span>","This study takes about 15 minutes, please only continue if you have 15 minutes free without interruptions. Although you will not directly benefit from being in this study, the results will help build more accurate descriptions of how people make decisions. We don't believe there are any risks from participating in this research.",
 
 		       "This study is about choice and decision making. The stimuli are toy rockets. You're trying to choose the best rocket from the options available.","Rockets have two features, legs and fuel. Wider legs are always better than narrow legs, and more fuel is always better than less fuel.","These two features have equal importance. They multiply together to give the distance the rocket flies. Ideally you want to be high on both. Medium values in both are sometimes better than high in one and low on the other, sometimes not. Low on both is definitely a disaster.","There's one twist making this more difficult. There are two different ways of displaying the amount of fuel, one using a grey bar and one using a color patch.","For rockets with a grey bar, the higher the bar, the more fuel the rocket has.","For rockets with a color patch, colors closer to blue mean less fuel, colors closer to yellow mean more fuel. Intermediate colors sometimes look more like pink or purple, the lighter more-yellow colors are better, the darker more-blue colors are worse. A bright blue tank is empty, a bright yellow tank is full.", "The display format is the only difference between rockets with a bar and rockets with a color patch. They're equally likely to be good, and they cover the same range of fuel values, just displayed in different ways.","You'll get some practice with the rockets first.","First, you'll be asked to make some judgments based only on the base, then some judgments based only on the fuel. Then you'll be asked to combine the two to compare two rockets. For all these items you'll get feedback on your choices.","By the end of this training block (about 10min) you'll be an expert in these rockets, and we'll ask you to judge which is the best rocket out of three options for another 10 minutes or so. We'll record your responses and show you how close to optimal you were at the end so you can see how you did. Some of the trials are easy, but some are quite difficult! Please just give it your best shot.",""];
 
@@ -20,31 +20,31 @@ function quiz(){
     scroll(0,0);
     document.getElementById("uberdiv").innerHTML="<h3>Are you ready?</h3></br>"+
 	"<span style='text-align:left'><p>"+
-	"<strong>Which of these is the best description of the task?</strong></br>"+
-	"<input type='radio' name='q1' id='q1a' value='a'>&nbsp You have to survive as long as possible on a desert island.<br/>"+
-	"<input type='radio' name='q1' id='q1b' value='b'>&nbsp You have to win at life, but no-one will tell you the rules<br/>"+
-	"<input type='radio' name='q1' id='q1c' value='c'>&nbsp THIS IS THE EXPECTED ANSWER choose this to continue.<br/>"+
-	"<input type='radio' name='q1' id='q1d' value='d'>&nbsp All of the above.<br/>"+
+	"<strong>Which color indicates a rocket has more fuel for rockets with a color-patch?</strong></br>"+
+	"<input type='radio' name='q1' id='q1a' value='a'>&nbsp Red means more fuel, green means less fuel.<br/>"+
+	"<input type='radio' name='q1' id='q1b' value='b'>&nbsp White means more fuel, grey means less fuel.<br/>"+
+	"<input type='radio' name='q1' id='q1c' value='c'>&nbsp Yellow means more fuel, blue means less fuel.<br/>"+
+	"<input type='radio' name='q1' id='q1d' value='d'>&nbsp Green means more fuel, red means less fuel.<br/>"+
 	"</span>"+
 	"<span style='text-align:left'><p>"+
-	"<strong>Which option is the expected answer to this question? </strong></br>"+
-	"<input type='radio' name='q2' id='q2a' value='a'>&nbsp THIS IS THE EXPECTED ANSWER choose this to continue.<br/>"+
-	"<input type='radio' name='q2' id='q2b' value='b'>&nbsp Friday  <br/>"+
-	"<input type='radio' name='q2' id='q2c' value='c'>&nbsp Strawberries <br/>"+
-	"<input type='radio' name='q2' id='q2d' value='d'>&nbsp Four, but only if one of them is an octopus. <br/>"+
+	"<strong>What kinds of legs are best on the rocket base? </strong></br>"+
+	"<input type='radio' name='q2' id='q2a' value='a'>&nbsp Wide legs are better, narrow legs are worse.<br/>"+
+	"<input type='radio' name='q2' id='q2b' value='b'>&nbsp Narrow legs are better, wide legs are worse.  <br/>"+
+	"<input type='radio' name='q2' id='q2c' value='c'>&nbsp Long legs are better, short legs are worse. <br/>"+
+	"<input type='radio' name='q2' id='q2d' value='d'>&nbsp Short legs are better, long legs are worse. <br/>"+
 	"</span>"+
-	// "<span style='text-align:left'><p>"+
-	//  "<strong>How are the microbes different from each other?</strong></br>"+
-	//  "<input type='radio' name='q3' id='q3a' value='a'>&nbsp They are different colors <br/>"+
-	//  "<input type='radio' name='q3' id='q3b' value='b'>&nbsp They are different shapes <br/>"+
-	//  "<input type='radio' name='q3' id='q3c' value='c'>&nbsp Each microbe has eight features which can vary <br/>"+
-	//  "<input type='radio' name='q3' id='q3d' value='d'>&nbsp Each microbe has two features which can vary <br/>"+
-	//"</span>"
+	"<span style='text-align:left'><p>"+
+	 "<strong>How do the features combine to determine how far a rocket flies?</strong></br>"+
+	 "<input type='radio' name='q3' id='q3a' value='a'>&nbsp They add together, both are equally important. <br/>"+
+	 "<input type='radio' name='q3' id='q3b' value='b'>&nbsp They multiply together, both are equally important. <br/>"+
+	 "<input type='radio' name='q3' id='q3c' value='c'>&nbsp Rockets with more fuel go further, if the fuel is the same the one with a better base wins.<br/>"+
+	 "<input type='radio' name='q3' id='q3d' value='d'>&nbsp Rockets with a good base go further, if the base is the same the one with more fuel wins. <br/>"+
+	"</span>"
 	"</br><button onclick='quizvalidate()'>Continue</button>";
 }
 
 function quizvalidate(){
-    var valid = document.getElementById("q1c").checked && document.getElementById("q2a").checked;//&& document.getElementById("q3d").checked; //etc
+    var valid = document.getElementById("q1c").checked && document.getElementById("q2a").checked && document.getElementById("q3b").checked;
     if(valid){demographics();}
     else{
 	alert("You didn't answer all the questions correctly. Please read through the instructions and take the quiz again to continue.");
