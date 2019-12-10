@@ -5,7 +5,23 @@ source("readData.R")
 saveplots <- FALSE
 deliberation_cutoff <- .9 #quantile to cut deliberation time hists at
 
+timespent_hist <-
+    ggplot(participation_time,
+           aes(x = (lastresponse - firstdraw) / 1000 / 60)) +
+    geom_histogram(binwidth=.5)
+if (saveplots) {
+ggsave(timespent_hist, file = "plots/timespenthist.png")
+}   
 ##PAIRS
+pair_stimgapsetup <- ggplot(pairsdf,
+                            aes(x = targfeature_diff)) +
+    geom_histogram(binwidth = .01) +
+    facet_grid(questiontype~.)
+
+if (saveplots) {
+    ggsave(pair_stimgapsetup, file = "plots/pair_stimgapsetup.png")
+}
+
 everytriad_plot <- ggplot(triadsdf) +
     geom_point(aes(x = base1, y = fuel1, shape = fueltype1, color = "targ")) +
     geom_point(aes(x = base2, y = fuel2, shape = fueltype2, color = "comp")) +
@@ -176,12 +192,24 @@ pairs_timingbydifficulty <- ggplot(pairsdf %>%
        filter(deliberationtime <
               quantile(pairsdf$deliberationtime, deliberation_cutoff)),
        aes(x = targfeature_diff,
-           y = deliberationtime,
+           y = std_time,
 #           color = questiontype,
            color = paste0(fueltype1, fueltype2))) +
     geom_point() +
-    facet_grid(questiontype~.)
+    facet_grid(questiontype~.)+
+    geom_smooth(se = FALSE)
 
+triad_timingbycomparisontype <-
+    ggplot(triadsdf,
+           aes(x = std_time, fill = comparisontype)) +
+    geom_density(alpha = 0.3) +
+    facet_grid(comparisontype~.)
+
+if (saveplots) {
+    ggsave(triad_timingbycomparisontype,
+           file = "plots/triad_timingbycomparisontype.png",
+           width = 15)
+}
 
 if (saveplots) {
     ggsave(pairs_timingbydifficulty,
@@ -189,8 +217,97 @@ if (saveplots) {
            width = 15)
 }
 
-## ggplot(arbrocket_triads) +
-##     geom_point(aes(x = base1,y = fuel1, shape = fueltype1, color = "targ")) +
-##     geom_point(aes(x = base2,y = fuel2, shape = fueltype2, color = "comp")) +
-##     geom_point(aes(x = base3,y = fuel3, shape = fueltype3, color = "decoy")) +
-##     geom_point(aes(x = .3, y = .7), color = "black")
+
+prefdiff_bycomparisontype <- function(comptype = c("colorcolorcolor",
+                                                   "colorcolorheight",
+                                                   "colorheightcolor",
+                                                   "colorheightheight",
+                                                   "heightcolorcolor",
+                                                   "heightcolorheight",
+                                                   "heightheightcolor",
+                                                   "heightheightheight")[1]) {
+    
+prefdiffs <- triadsdf %>% filter(startsWith(triadtype, "dominated"),
+                                 comparisontype == comptype) %>%
+    group_by(as.factor(decoydist)) %>%
+    summarize(chose_targ = sum(rolechosen == "targ"),
+              chose_comp = sum(rolechosen == "comp"),
+              chose_decoy = sum(rolechosen == "decoy")) %>%
+    mutate(tcdiff = chose_targ - chose_comp) %>%
+    ungroup
+names(prefdiffs)[1] <- "decoydist"
+prefdiffs$decoydist <- as.numeric(as.character(prefdiffs$decoydist))
+return(
+    ggplot(prefdiffs, aes(x = decoydist, y = tcdiff)) +
+    geom_bar(stat = "identity") +
+    ylim(c(-73, 73))
+)
+}
+
+
+everything_rolebars <-
+    ggplot(triadsdf, aes(x = rolechosen, fill = rolechosen)) +
+    geom_bar() +
+    facet_grid(triadtype~comparisontype)
+if (saveplots) {
+    ggsave(everything_rolebars, file = "plots/everything_rolebars.png",
+           height = 20,width = 15)
+    }
+
+
+everything_classbars <-
+    ggplot(triadsdf, aes(x = rolechosen, fill = rolechosen)) +
+    geom_bar() +
+    facet_grid(triadtype~comparisonclass)
+
+if (saveplots) {
+    ggsave(everything_classbars, file = "plots/everything_classbars.png")
+    }
+
+dominated_allsamevsodddecoy_classbars <-
+    ggplot(triadsdf %>%
+           filter(startsWith(triadtype,"dom"),
+                  comparisonclass %in% c("allsame", "decoy_odd")),
+           aes(x = rolechosen, fill = rolechosen)) +
+    geom_bar() +
+    facet_grid(triadtype~comparisonclass)
+
+if (saveplots) {
+    ggsave(dominated_allsamevsodddecoy_classbars,
+           file = "plots/dominated_allsamevsodddecoy_classbars.png"
+           )
+    }
+
+
+compromise_allsamevsodddecoy_classbars <-
+    ggplot(triadsdf %>% filter(triadtype == "compromise",
+                               comparisonclass %in% c("allsame", "decoy_odd")),
+           aes(x = rolechosen, fill = rolechosen)) +
+    geom_bar() +
+    facet_grid(triadtype~comparisonclass)
+
+if (saveplots) {
+    ggsave(compromise_allsamevsodddecoy_classbars,
+           file = "plots/compromise_allsamevsodddecoy_classbars.png"
+           )
+    }   
+
+featureprefs <- 
+ggplot(
+    triadsdf %>%
+    group_by(ppntID) %>%
+    summarize(chosebybase = sum(rolechosen == best_base_role),
+              chosebyfuel = sum(rolechosen == best_fuel_role),
+              other = n() - chosebybase - chosebyfuel
+              ) %>%
+    ungroup) +
+    geom_histogram(aes(x = chosebybase / 56, fill = "base"), alpha=.3) +
+    geom_histogram(aes(x = chosebyfuel / 56, fill = "fuel"), alpha=.3) +
+    xlab("")
+
+
+if (saveplots) {
+    ggsave(featureprefs,
+           file = "plots/featureprefs.png"
+           )
+    }

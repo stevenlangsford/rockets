@@ -671,7 +671,7 @@ function pair_trial(rocket1, rocket2, text, answer){ //Use 'get_pair_trial' to c
 
 function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     //targ_feature in ["fuel", "base", "distance"]
-    //targ_difference in 0-1
+    //targ_difference in 0-1 Targ_difference used only in fuel and base pairs, not distance. Hmm. Bad?
     //fueltype in ["color","height"]
     var lower_value = Math.random()*(1-targ_difference)
     var upper_value = lower_value+targ_difference

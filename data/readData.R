@@ -7,10 +7,18 @@ pairsdf <- read.csv("raw/pairresponsedata.csv")
 triadsdf <- read.csv("raw/triadresponsedata.csv") %>%
     mutate(triadtype = as.character(triadtype))
 
-##TODO. Exclusion criteria: accuracy on trials-with-an-answer?
 
+## Exclusions appear at end of file because they use derived info like accuracy.
 
 ##adding some derived info to the dfs:
+participation_time <-
+    pairsdf %>%
+    group_by(ppntID) %>%
+    summarize(firstdraw = min(drawtime)) %>%
+    full_join(triadsdf %>%
+    group_by(ppntID) %>%
+    summarize(lastresponse = max(responsetime))
+    )
 
 ##pairs
 levels(pairsdf$questiontype) <- c("base", "distance", "fuel")
@@ -103,7 +111,80 @@ if (triadsdf[i, "triadtype"] == "dominated_decoy"){
                                       sep = "_")
 }
 
-}
+triadsdf[i, "best_base_role"] <- with(triadsdf[i, ],
+                                     c("targ", "comp", "decoy")[
+                                         which(c(base1, base2, base3) ==
+                                               max(c(base1, base2, base3)))])
+triadsdf[i, "best_fuel_role"] <- with(triadsdf[i, ],
+                                     c("targ", "comp", "decoy")[
+                                         which(c(fuel1, fuel2, fuel3) ==
+                                               max(c(fuel1, fuel2, fuel3)))])
 
+}#end for each row in triads
+
+
+triadsdf <- triadsdf %>%
+    group_by(ppntID) %>%
+    mutate(std_time = (deliberationtime - mean(deliberationtime)) /
+               sd(deliberationtime)
+           ) %>%
+    ungroup
+
+pairsdf <- pairsdf %>%
+    group_by(ppntID) %>%
+    mutate(std_time = (deliberationtime - mean(deliberationtime)) /
+               sd(deliberationtime)
+           ) %>%
+    ungroup
+
+comparisonclass_map <- function(comptype) {
+    if (comptype == "colorcolorcolor")return("allsame")
+    if (comptype == "colorcolorheight")return("decoy_odd")
+    if (comptype == "colorheightcolor")return("comp_odd")
+    if (comptype == "colorheightheight")return("targ_odd")
+    if (comptype == "heightcolorcolor")return("targ_odd")
+    if (comptype == "heightcolorheight")return("comp_odd")
+    if (comptype == "heightheightcolor")return("decoy_odd")
+    if (comptype == "heightheightheight")return("allsame")
+    stop(paste("comptype washout in comparison class map", comptype))
+    }
+triadsdf$comparisonclass <- sapply(triadsdf$comparisontype, comparisonclass_map)
+
+triadsdf$rolechosen <- factor(triadsdf$rolechosen,
+                              #ordered = TRUE,
+                              levels = c("targ", "comp", "decoy")
+                              )
+
+
+
+
+##EXCLUSION CRITERIA
+toofast_cutoff <- 6 #min, set from inspection of 1st pilot hist of times.
+baseaccuracy_cutoff <- .6
+
+toofast <- participation_time %>%
+    filter((lastresponse - firstdraw) / 1000 / 60 < toofast_cutoff) %>%
+    select(ppntID)
+
+bad_base_accuracy <-
+    pairsdf %>%
+    group_by(ppntID, questiontype) %>%
+    summarize(p_correct = mean(ans_correct)) %>%
+    filter(questiontype == "base", p_correct < baseaccuracy_cutoff) %>%
+    select(ppntID)
+
+colblind <- demographicsdf %>% filter(colblind == "yes") %>% select(ppntID)
+
+badID <- unique(c(toofast$ppntID,
+                  bad_base_accuracy$ppntID,
+                  colblind$ppntID))
+#in pilot_1: 7 exclusions, 4 too fast, 1 bad accuracy, 2 colblind. Not bad!
+
+
+pairsdf <- pairsdf %>% filter(!ppntID %in% badID)
+triadsdf <- triadsdf %>% filter(!ppntID %in% badID)
 ##namespace cleanup
-rm("rolechosen")
+rm(list = setdiff(ls(), c("pairsdf",
+                          "triadsdf",
+                          "demographicsdf",
+                          "participation_time")))
