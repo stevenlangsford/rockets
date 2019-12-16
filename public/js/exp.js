@@ -303,7 +303,7 @@ function shuffle(a) { //via https://stackoverflow.com/questions/6274339/how-can-
 
 document.getElementById("uberdiv").innerHTML = " <canvas id=\"ubercanvas\" width=\""+canvaswidth+"\" height=\""+canvasheight+"\" ></canvas>"
 
-function makeRocket(fuel_value, base_value, display_type,idstring){
+function makeRocket(fuel_value, base_value, display_type, idstring){
     //arg validity asserts. Probably there's a better pattern for this?
     if(fuel_value <0 || fuel_value > 1)error("rocket fuel not in 0-1:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
     if(base_value <0 || base_value > 1)error("rocket base not in 0-1:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
@@ -327,6 +327,10 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
     }
 
     this.drawMe = function(x, y){
+	var maxjitter = 50;
+	x=x+Math.random()*maxjitter-maxjitter/2; //Always obligatory jitter on every draw?
+	y=y+Math.random()*maxjitter-maxjitter/2;
+	
 	var canvas = document.getElementById('ubercanvas');
 	var ctx = canvas.getContext('2d');
 
@@ -341,7 +345,7 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 	var legwidth = 4*stimsize; //line thickness
 	var fuelmargin = hw/2; //gap between fuel tank and rocket body. (stimsize factored in to hw)
 	
-	var hatcolor = 	"#E00000";
+	var hatcolor = 	"#000000";
 	var bodycolor = "#000000"; //unchanging, background bit, not fuel bar variable.
 
 	var colorleftpadder = function(astring){
@@ -392,14 +396,25 @@ function makeRocket(fuel_value, base_value, display_type,idstring){
 	ctx.fill();
 
 	
-	//draw legs
+	//draw base
 	ctx.beginPath();
-	ctx.moveTo(x-0.5*bw, y-hw/4); //the -hw/4 pulls leg joint point up behind body (with ref to stimsize baked in)
-	ctx.lineWidth = legwidth;
-	ctx.lineTo(x-0.5*this.base*maxbase, y+lh);
-	ctx.moveTo(x+0.5*bw,y-hw/4);
-	ctx.lineTo(x+0.5*this.base*maxbase, y+lh);
-	ctx.stroke();
+	ctx.fillStyle = bodycolor;
+
+	//triangle-base
+	ctx.moveTo(x-bw,y); //LL corner of upper stage
+	ctx.lineTo(x-bw-hw, y+base_value*bh*2); //LL corner of lower stage: standard width, variable height
+	ctx.lineTo(x+bw+hw, y+base_value*bh*2); //LR corner of lower stage
+	ctx.lineTo(x+bw,y); //LL corner of upper stage
+	ctx.fill();
+
+	//Box-base
+	// ctx.fillStyle = bodycolor;
+	// ctx.fillRect(x-bw-hw,
+	// 	     y,
+	// 	     (bw+hw)*2,
+	// 	     base_value*bh*2) //base stage is bigger than upper stage. Think harder about the impact of this?
+
+
 
 	//draw fuel tank
 	ctx.fillStyle = fuelcolor;
@@ -925,7 +940,7 @@ for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 // 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo3"))
 // 	   );
 
-
+trialIndex=3;//skip splash screen
 nextTrial();
 
 // function draw_stim_square(){
