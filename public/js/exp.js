@@ -4,7 +4,14 @@ var groundlevel = window.innerHeight-155;
 var groundjitter = 100;
 var ppntID = localStorage.getItem("ppntID");
 
+var autojitter = false; //adds jitter to every rocket draw: turn off for sliders, turn on for pairs/triads. (sorry *again* about global var mess :-( )
+var rockets_clickable = false; //again turn off for sliders, turn on for pairs/triads. Such a hack, sliders wasn't part of the initial design. Oh well.
 var drawtime = "init";
+
+function sliderfeasible(a,b,c){
+    //slider-feature can only be in 0-1. So a*b must be in [0, c] for the slider task to be passable.
+    return a*b <= c;
+}
 // function testcolor(athing){
 //     var canvas = document.getElementById("ubercanvas");
 //     var ctx = canvas.getContext('2d');
@@ -316,6 +323,7 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
     this.fuel = fuel_value;
     this.base = base_value;
     this.type = display_type;
+    this.basetype = base_type;
     this.idstring = idstring;
     
     this.flight_value = fuel_value * base_value;
@@ -330,8 +338,10 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
 
     this.drawMe = function(x, y){
 	var maxjitter = 50;
-	x=x+Math.random()*maxjitter-maxjitter/2; //Always obligatory jitter on every draw?
-	y=y+Math.random()*maxjitter-maxjitter/2;
+	if(autojitter){//obligatory jitter at draw time controlled by global var: off for sliders, on for pairs/triads.
+	    x=x+Math.random()*maxjitter-maxjitter/2; 
+	    y=y+Math.random()*maxjitter-maxjitter/2;
+	}
 	
 	var canvas = document.getElementById('ubercanvas');
 	var ctx = canvas.getContext('2d');
@@ -436,6 +446,31 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
     
 }
 
+function sliderfeedback(){
+    var valuegap = (sliderRocket2.flight_value-sliderRocket1.flight_value);
+
+    var target_feedback;
+    if(valuegap < -.1) target_feedback = 0; //too cheap
+    if(valuegap > .1) target_feedback = 1; //too expensive
+    if(Math.abs(valuegap)<.1)target_feedback = 2;//just right
+    
+    var canvas = document.getElementById("ubercanvas");
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    abs_holder_div.innerHTML = "";
+
+    ctx.font = "1.5em Arial";
+    ctx.fillStyle =  ["red", "red","green"];
+    ctx.textAlign = "center";
+    ctx.fillText(["Your rocket is cheaper, try again","Your rocket is more expensive, try again","Rockets match!"][target_feedback], canvas.width/2, canvas.height/2);
+
+    trialIndex += [-1,-1,0][target_feedback];
+
+    window.setTimeout(nextTrial,1500);
+
+    
+}
+
 function feedback(what_kind){
     live_clickables = [];
     if(!["correct","wrong"].includes(what_kind)){
@@ -461,6 +496,22 @@ var live_clickables = []; //cleared by nextTrial, populated by rocket.drawMe (Lo
 var live_ans = "none"; //set by pair_trial.drawme. Compare clicked ans to this to give feedback.
 
 document.getElementById("ubercanvas").addEventListener('click',function(aclick){
+
+    if(!rockets_clickable){//do slider things: ie done button. Else use the original rocket-click listener below.
+	var mid_x = document.getElementById("ubercanvas").width / 2;
+	var mid_y =  document.getElementById("ubercanvas").height / 2;
+	var gapwidth = 125; // defined in multiple places *ouch*
+	//	ctx.fillRect(mid_x-gapwidth, mid_y+150, 2*gapwidth,100); //draws the done button
+	if(aclick.offsetX>mid_x-gapwidth && aclick.offsetX<mid_x-gapwidth+2*gapwidth){
+	    if(aclick.offsetY>mid_y+100 && aclick.offsetY<mid_y+200){
+		sliderfeedback();
+		return;
+	    }
+	}
+	console.log("slider out")
+	return;
+    }
+    
     for(var i=0;i<live_clickables.length;i++){
 	var clickresult = live_clickables[i](aclick.offsetX,aclick.offsetY);
 	if(clickresult!="miss"){
@@ -905,8 +956,99 @@ trials.push(new splashScreen("Which rocket will fly furthest?"))
 shuffle(distancetriads);
 for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 
+//old (no slider) entry point
+//nextTrial();
 
-trialIndex=3;//skip splash screen
+//MESSING WITH SLIDERS:
+
+var sliderRocket1;//using global vars again for convenient listeners. Terrible pattern, I hate this. Sorry.
+var sliderRocket2;
+
+function slidertrial(targ_rocket, probe_rocket, sliderfeature){
+    this.rocket1 = targ_rocket;
+    this.rocket2 = probe_rocket;
+    
+    this.drawMe = function(){
+	sliderRocket1 = targ_rocket; //argh the pain of communicating via global vars. Sorry again.
+	sliderRocket2 = probe_rocket;
+
+	//slider bit:
+	document.getElementById("sliderdiv").innerHTML=("<div class=\"slidecontainer\" id='sliderdiv'>"+
+		       "<p class='centered'>Adjust the slider until the two rockets cost the same, then click done</p>"+
+		       "<input type=\"range\" min=\"1\" max=\"100\" value=\"50\" class=\"slider\" id=\"myRange\">"+
+//		       "<p class='centered'><button onclick='alert('boo')'>Done</button></p>"+
+		       "</div><div id='uberdiv'></div>");
+
+var slider = document.getElementById("myRange");
+
+// Update the current slider value (each time you drag the slider handle)
+	slider.oninput = function() {
+
+	    var canvas = document.getElementById("ubercanvas");
+	    var ctx = canvas.getContext('2d');
+	    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+	    sliderRocket2 = new makeRocket(sliderRocket2.fuel,
+					   (this.value/100),
+					   sliderRocket2.type,
+					   sliderRocket2.basetype,
+					   "sliderrocket")
+
+	    sliderRocket1.drawMe(mid_x - gapwidth, mid_y);
+	    sliderRocket2.drawMe(mid_x + gapwidth, mid_y);
+
+    	ctx.fillStyle = "grey";
+	ctx.fillRect(mid_x-gapwidth, mid_y+150, 2*gapwidth,100);
+	ctx.fillStyle = "black";
+	ctx.font = '40pt Kremlin Pro Web';
+	ctx.fillText('Done', mid_x-60, mid_y+210);
+	}//end slider oninput
+	
+	//rockets bit:
+	var mid_x = document.getElementById("ubercanvas").width / 2;
+	var mid_y =  document.getElementById("ubercanvas").height / 2;
+
+	var gapwidth = 125; // gap each side of center, ie half the full gap width. in px.
+
+	this.rocket1.drawMe(mid_x - gapwidth, mid_y);
+	this.rocket2.drawMe(mid_x + gapwidth, mid_y);
+
+
+	//donebutton bit:
+	var canvas = document.getElementById("ubercanvas");
+	var ctx = canvas.getContext('2d');
+	ctx.fillStyle = "grey";
+	ctx.fillRect(mid_x-gapwidth, mid_y+150, 2*gapwidth,100);
+	ctx.fillStyle = "black";
+	ctx.font = '40pt Kremlin Pro Web';
+	ctx.fillText('Done', mid_x-60, mid_y+210);
+    }//end drawMe
+}//end slidertrial
+
+//SLIDER DEMO MAIN
+trials = [];
+for(var i = 0; i<5;i++){
+
+    var a = Math.random();
+    var b = Math.random();
+    var c = Math.random();
+
+    while(!sliderfeasible(a,b,c)){
+	var a = Math.random();
+	var b = Math.random();
+	var c = Math.random();
+    }
+    //actually you probably want to push specific trial types: fuel sliders & base sliders for bar/color comparison types.
+    trials.push(
+	new slidertrial(
+	    new makeRocket(a,b,shuffle(["height","color"])[0],shuffle(["square","flair"])[0],"McRando"),
+	    new makeRocket(c,.5,shuffle(["height","color"])[0],shuffle(["square","flair"])[0],"McRando2"),
+	    "base"
+	)
+    );
+
+}
+
 nextTrial();
 
 // function draw_stim_square(){
