@@ -303,12 +303,14 @@ function shuffle(a) { //via https://stackoverflow.com/questions/6274339/how-can-
 
 document.getElementById("uberdiv").innerHTML = " <canvas id=\"ubercanvas\" width=\""+canvaswidth+"\" height=\""+canvasheight+"\" ></canvas>"
 
-function makeRocket(fuel_value, base_value, display_type, idstring){
+function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
     //arg validity asserts. Probably there's a better pattern for this?
     if(fuel_value <0 || fuel_value > 1)error("rocket fuel not in 0-1:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
     if(base_value <0 || base_value > 1)error("rocket base not in 0-1:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
     var legaldisplay = ["color","height"];
-//    if(!legaldisplay.includes(display_type))error("rocket display not recognized:"+fuel_value+"_"+base_value+"_"+display_type+"_"+idstring);
+    var legalbase = ["square","flair"];
+    if(!legaldisplay.includes(display_type))console.log("rocket fuel display not recognized:"+fuel_value+"_"+base_value+"_"+display_type+"_"+base_type+"_"+idstring);
+    if(!legalbase.includes(base_type))console.log("rocket basetype not recognized:"+fuel_value+"_"+base_value+"_"+display_type+"_"+base_type+"_"+idstring);
 
     
     this.fuel = fuel_value;
@@ -401,19 +403,21 @@ function makeRocket(fuel_value, base_value, display_type, idstring){
 	ctx.fillStyle = bodycolor;
 
 	//triangle-base
+	if(base_type=="flair"){
 	ctx.moveTo(x-bw,y); //LL corner of upper stage
 	ctx.lineTo(x-bw-hw, y+base_value*bh*2); //LL corner of lower stage: standard width, variable height
 	ctx.lineTo(x+bw+hw, y+base_value*bh*2); //LR corner of lower stage
 	ctx.lineTo(x+bw,y); //LL corner of upper stage
 	ctx.fill();
-
+	}
 	//Box-base
-	// ctx.fillStyle = bodycolor;
-	// ctx.fillRect(x-bw-hw,
-	// 	     y,
-	// 	     (bw+hw)*2,
-	// 	     base_value*bh*2) //base stage is bigger than upper stage. Think harder about the impact of this?
-
+	if(base_type=="square"){
+	ctx.fillStyle = bodycolor;
+	ctx.fillRect(x-bw-hw,
+		     y,
+		     (bw+hw)*2,
+		     base_value*bh*2) //base stage is bigger than upper stage. Think harder about the impact of this?
+	}
 
 
 	//draw fuel tank
@@ -698,19 +702,20 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     }
     
     var rockets = [];
-
+    var my_base_style = shuffle(["square","flair"])[0];
+    
     if(targ_feature == "fuel"){
-	rockets.push(new makeRocket(lower_value,Math.random(),fueltype1,"trial"+trialIndex+"_rocket1"));
-	rockets.push(new makeRocket(upper_value,Math.random(),fueltype2,"trial"+trialIndex+"_rocket2"));
+	rockets.push(new makeRocket(lower_value,Math.random(),fueltype1,my_base_style,"trial"+trialIndex+"_rocket1"));
+	rockets.push(new makeRocket(upper_value,Math.random(),fueltype2,my_base_style,"trial"+trialIndex+"_rocket2"));
     }
     if(targ_feature == "base"){
-	rockets.push(new makeRocket(Math.random(),lower_value,fueltype1,"trial"+trialIndex+"_rocket1"));
-	rockets.push(new makeRocket(Math.random(),upper_value,fueltype2,"trial"+trialIndex+"_rocket2"));
+	rockets.push(new makeRocket(Math.random(),lower_value,fueltype1,my_base_style,"trial"+trialIndex+"_rocket1"));
+	rockets.push(new makeRocket(Math.random(),upper_value,fueltype2,my_base_style,"trial"+trialIndex+"_rocket2"));
     }
 
     if(targ_feature == "distance"){//you might also want to titrate the difficulty of these?
-	rockets.push(new makeRocket(Math.random(),Math.random(),fueltype1,"trial"+trialIndex+"_rocket1"));
-	rockets.push(new makeRocket(Math.random(),Math.random(),fueltype2,"trial"+trialIndex+"_rocket1"));
+	rockets.push(new makeRocket(Math.random(),Math.random(),fueltype1,my_base_style,"trial"+trialIndex+"_rocket1"));
+	rockets.push(new makeRocket(Math.random(),Math.random(),fueltype2,my_base_style,"trial"+trialIndex+"_rocket1"));
     }
     
     if(!["fuel","base","distance"].includes(targ_feature)){
@@ -732,7 +737,7 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     
     var mytrial = new pair_trial(rockets[0],
 				 rockets[1],
-				 "Which rocket has the best "+targ_feature+"?", ans);
+				 "Which rocket has the cheapest "+targ_feature+"?", ans);
 
     return(mytrial);
     //trials.push(mytrial);
@@ -847,10 +852,10 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
 	var comp = getComp(targ);
 	var decoy = getDominatedDecoy(targ, diststeps[diststeps_i], diststeps[diststeps_i])
 
-	
-	distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
-				    new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
-					    new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2]),
+	var my_base_style = shuffle(["square","flair"])[0];
+	distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],my_base_style,"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
+					    new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],my_base_style,"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
+					    new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],my_base_style,"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2]),
 					    "dominated_decoy"
 				   )
 		   );stimcounter++;
@@ -862,17 +867,19 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
     var targ = getTarg();
     var comp = getComp(targ);
     var decoy = getCompromiseDecoy(targ);
-    distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
-				new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
-					new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2]),
+    my_base_style = shuffle(["square","flair"])[0];
+    distancetriads.push(new triad_trial(new makeRocket(targ[0],targ[1],comparisontypes[comp_i][0],my_base_style,"stim_"+stimcounter+"targ"+comparisontypes[comp_i][0]),
+					new makeRocket(comp[0],comp[1],comparisontypes[comp_i][1],my_base_style,"stim_"+stimcounter+"comp"+comparisontypes[comp_i][1]),
+					new makeRocket(decoy[0],decoy[1],comparisontypes[comp_i][2],my_base_style,"stim_"+stimcounter+"decoy"+comparisontypes[comp_i][2]),
 					"compromise"
 			       )
 	       );stimcounter++;
 
     //random stim
-    distancetriads.push(new triad_trial(new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][0],"stim_"+stimcounter+"rnd"+comparisontypes[comp_i][0]),
-				new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][1],"stim_"+stimcounter+"rnd2"+comparisontypes[comp_i][1]),
-					new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][2],"stim_"+stimcounter+"rnd3"+comparisontypes[comp_i][2]),
+    my_base_style = shuffle(["square","flair"])[0];
+    distancetriads.push(new triad_trial(new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][0],my_base_style,"stim_"+stimcounter+"rnd"+comparisontypes[comp_i][0]),
+					new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][1],my_base_style,"stim_"+stimcounter+"rnd2"+comparisontypes[comp_i][1]),
+					new makeRocket(Math.random(),Math.random(),comparisontypes[comp_i][2],my_base_style,"stim_"+stimcounter+"rnd3"+comparisontypes[comp_i][2]),
 					"random"
 			       )
 	       );stimcounter++;
@@ -898,47 +905,6 @@ trials.push(new splashScreen("Which rocket will fly furthest?"))
 shuffle(distancetriads);
 for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 
-
-
-
-//Not the exp: stim  DEMO SEQUENCE
-//  trials.push(new splashScreen("Which rocket has the best base?"))
-
-//  push_a_pair_trial("base",0.2,"height", "height")
-//  push_a_pair_trial("base",0.2,"color", "color")
-//  push_a_pair_trial("base",0.2,"color", "height")
-//  push_a_pair_trial("base",0.2,"height", "color")
-
-//  trials.push(new splashScreen("Which rocket has the best fuel?"))
-
-// push_a_pair_trial("fuel",0.2,"height", "height")
-// push_a_pair_trial("fuel",0.2,"color", "color")
-// push_a_pair_trial("fuel",0.2,"color", "height")
-// push_a_pair_trial("fuel",0.2,"height", "color")
-
-// trials.push(new splashScreen("Which rocket will fly furthest?"))
-
-// push_a_pair_trial("distance",0.2,"height", "height")
-// push_a_pair_trial("distance",0.2,"color", "color")
-// push_a_pair_trial("distance",0.2,"color", "height")
-// push_a_pair_trial("distance",0.2,"height", "color")
-
-// trials.push(new splashScreen("Which rocket will fly furthest?"));
-
-// trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
-// 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo2"),
-// 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo3"))
-// 	   );
-
-// trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"height","bar_demo1"),
-// 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo2"),
-// 			    new makeRocket(Math.random(),Math.random(),"height","bar_demo3"))
-// 	   );
-
-// trials.push(new triad_trial(new makeRocket(Math.random(),Math.random(),"color","bar_demo1"),
-// 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo2"),
-// 			    new makeRocket(Math.random(),Math.random(),"color","bar_demo3"))
-// 	   );
 
 trialIndex=3;//skip splash screen
 nextTrial();
