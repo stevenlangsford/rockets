@@ -450,21 +450,29 @@ function sliderfeedback(){
     var valuegap = (sliderRocket2.flight_value-sliderRocket1.flight_value);
 
     var target_feedback;
-    if(valuegap < -.1) target_feedback = 0; //too cheap
-    if(valuegap > .1) target_feedback = 1; //too expensive
-    if(Math.abs(valuegap)<.1)target_feedback = 2;//just right
-    
+    var accuracy_threshold = .05;
+    if(valuegap < -accuracy_threshold) target_feedback = 0; //too cheap
+    if(valuegap > accuracy_threshold) target_feedback = 1; //too expensive
+    if(Math.abs(valuegap)<accuracy_threshold)target_feedback = 2;//just right
+    if(Math.abs(valuegap)<accuracy_threshold/2)target_feedback = 3; //perfection
+       
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
     abs_holder_div.innerHTML = "";
 
     ctx.font = "1.5em Arial";
-    ctx.fillStyle =  ["red", "red","green"];
+    ctx.fillStyle =  ["red", "red","green", "green"][target_feedback];
     ctx.textAlign = "center";
-    ctx.fillText(["Your rocket is cheaper, try again","Your rocket is more expensive, try again","Rockets match!"][target_feedback], canvas.width/2, canvas.height/2);
+    ctx.fillText(["Your rocket is cheaper, try again",
+		  "Your rocket is more expensive, try again",
+		  "Close enough!"+(valuegap<0 ? "Your rocket is cheaper by "+Math.round(Math.abs(valuegap*100)) :
+					"Your rocket is more expensive by "+Math.round(valuegap*100)),
+		  "Perfect match!"
+		 ][target_feedback],
+		 canvas.width/2, canvas.height/2);
 
-    trialIndex += [-1,-1,0][target_feedback];
+    trialIndex += [-1,-1,0,0][target_feedback];
 
     window.setTimeout(nextTrial,1500);
 
@@ -697,6 +705,11 @@ function nextTrial(){
     trialIndex++;
     live_clickables = [];
     drawtime = "init";
+    if(trialIndex>slidertrials.length){ //= rather than >= because of the splash screen.
+	autojitter = true;
+	rockets_clickable = true;//gods this global vars thing is so horrible, I'm sorry. Not an excuse, but it's because sliders were added late.
+	document.getElementById("sliderdiv").innerHTML="";//Everything here is kludge and bad.
+    }
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -937,29 +950,7 @@ for(var comp_i = 0; comp_i < comparisontypes.length; comp_i++){
 }
 
 
-
-
-//putting it all together:
-trials.push(new splashScreen("Which rocket has the best base?"))
-shuffle(basetraining);
-for(var i=0;i<basetraining.length;i++){trials.push(basetraining[i])}
-
-trials.push(new splashScreen("Which rocket has the best fuel?"))
-shuffle(fueltraining);
-for(var i=0;i<fueltraining.length;i++){trials.push(fueltraining[i])}
-
-trials.push(new splashScreen("Which rocket will fly furthest?"))
-shuffle(distancepairs);
-for(var i=0;i<distancepairs.length;i++){trials.push(distancepairs[i])}
-
-trials.push(new splashScreen("Which rocket will fly furthest?"))
-shuffle(distancetriads);
-for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
-
-//old (no slider) entry point
-//nextTrial();
-
-//MESSING WITH SLIDERS:
+//sliders:
 
 var sliderRocket1;//using global vars again for convenient listeners. Terrible pattern, I hate this. Sorry.
 var sliderRocket2;
@@ -988,12 +979,19 @@ var slider = document.getElementById("myRange");
 	    var ctx = canvas.getContext('2d');
 	    ctx.clearRect(0,0,canvas.width,canvas.height);
 
+	    if(sliderfeature == "base"){
 	    sliderRocket2 = new makeRocket(sliderRocket2.fuel,
 					   (this.value/100),
 					   sliderRocket2.type,
 					   sliderRocket2.basetype,
 					   "sliderrocket")
-
+	    }else{
+	    sliderRocket2 = new makeRocket((this.value/100),
+					   sliderRocket2.base,
+					   sliderRocket2.type,
+					   sliderRocket2.basetype,
+					   "sliderrocket")
+	    }
 	    sliderRocket1.drawMe(mid_x - gapwidth, mid_y);
 	    sliderRocket2.drawMe(mid_x + gapwidth, mid_y);
 
@@ -1026,9 +1024,12 @@ var slider = document.getElementById("myRange");
 }//end slidertrial
 
 //SLIDER DEMO MAIN
-trials = [];
-for(var i = 0; i<5;i++){
-
+var slidertrials = [];
+var reps_per_slidertype = 3;
+var slidertypes = ["base","barbar","colorcolor","barcolor","colorbar"];
+for(var i = 0; i<reps_per_slidertype;i++){
+    for(var myslidertype=0;myslidertype<slidertypes.length;myslidertype++){
+	
     var a = Math.random();
     var b = Math.random();
     var c = Math.random();
@@ -1039,16 +1040,72 @@ for(var i = 0; i<5;i++){
 	var c = Math.random();
     }
     //actually you probably want to push specific trial types: fuel sliders & base sliders for bar/color comparison types.
-    trials.push(
+	if(slidertypes[myslidertype]=="base"){
+	slidertrials.push(
 	new slidertrial(
 	    new makeRocket(a,b,shuffle(["height","color"])[0],shuffle(["square","flair"])[0],"McRando"),
 	    new makeRocket(c,.5,shuffle(["height","color"])[0],shuffle(["square","flair"])[0],"McRando2"),
 	    "base"
 	)
-    );
+	);
+	}
+	if(slidertypes[myslidertype]=="barbar"){
+	slidertrials.push(
+	new slidertrial(
+	    new makeRocket(a,b,"height",shuffle(["square","flair"])[0],"McRando"),
+	    new makeRocket(c,.5,"height",shuffle(["square","flair"])[0],"McRando2"),
+	    "fuel"
+	)
+	);
+	}
+	if(slidertypes[myslidertype]=="barcolor"){
+	slidertrials.push(
+	new slidertrial(
+	    new makeRocket(a,b,"height",shuffle(["square","flair"])[0],"McRando"),
+	    new makeRocket(c,.5,"color",shuffle(["square","flair"])[0],"McRando2"),
+	    "fuel"
+	)
+	);
+		}
+	if(slidertypes[myslidertype]=="colorbar"){
+	slidertrials.push(
+	new slidertrial(
+	    new makeRocket(a,b,"color",shuffle(["square","flair"])[0],"McRando"),
+	    new makeRocket(c,.5,"height",shuffle(["square","flair"])[0],"McRando2"),
+	    "fuel"
+	)
+	);
+	}
+	
+    }//end for each slidertype (there has got to be a cleaner way to do walk-throughs...    
+}//end reps-for-each-slidertype
 
+
+
+trials.push(new splashScreen("Build a rocket!"))
+shuffle(slidertrials);
+for(var i=0;i<slidertrials.length;i++){
+    trials.push(slidertrials[i]);
 }
 
+//putting it all together:
+trials.push(new splashScreen("Which rocket has the best base?"))
+shuffle(basetraining);
+for(var i=0;i<basetraining.length;i++){trials.push(basetraining[i])}
+
+trials.push(new splashScreen("Which rocket has the best fuel?"))
+shuffle(fueltraining);
+for(var i=0;i<fueltraining.length;i++){trials.push(fueltraining[i])}
+
+trials.push(new splashScreen("Which rocket will fly furthest?"))
+shuffle(distancepairs);
+for(var i=0;i<distancepairs.length;i++){trials.push(distancepairs[i])}
+
+trials.push(new splashScreen("Which rocket will fly furthest?"))
+shuffle(distancetriads);
+for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
+
+//entry point:
 nextTrial();
 
 // function draw_stim_square(){
