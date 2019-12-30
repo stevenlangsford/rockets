@@ -100,6 +100,30 @@ app.get("/gettriadresponses",requireLogin,function(req,res){
 });
 
 
+app.get("/getsliderresponses",requireLogin,function(req,res){
+    var pool = new pg.Pool({connectionString:process.env.DATABASE_URL});
+    pool.connect(function(err,client,done){
+	client.query('select * from slider_responses',function(err,result){
+	    if(err){
+		{console.error(err); res.send("Error "+err);}
+		}else{
+		    //TODO do something sensible if there are no results!
+		    var fields = Object.keys(JSON.parse(result.rows[0].response));
+		    var responses = [];
+		    	   for(var i=0;i<result.rowCount;i++){
+			       responses.push(JSON.parse(result.rows[i].response));
+			   }
+
+		    var response_csv = json2csv({data: responses, fields:fields});
+		    res.attachment("triadresponsedata.csv");
+		    res.send(response_csv);
+		}
+	});//end query
+    });
+    pool.end();
+});
+
+
 //should collapse this and getresponses into one getData and pass it the target table name? Two issues with that, differing col names in the db and getting file-save prompts from the client page.
 app.get("/getdemographics",requireLogin,function(req,res){
     var pool = new pg.Pool({connectionString:process.env.DATABASE_URL});
@@ -157,6 +181,29 @@ app.post('/demographics',function(req,res){
     	client.query('insert into demographics values ($1, $2)', //Probably a crime to save a multi-value objs in one 'info' col. Oh well.
 		     [Date.now(),
 		     req.body.demographics],
+    		     function(err, result){
+    			 if (err)
+    			 {console.error(err); res.send("Error " + err); } //For now the client just prints the error to the console. What's ideal?
+    			 else
+    			 { // response.render('pages/db', {results: result.rows});
+    			     res.send("success");
+    			 }
+    		     });//end query
+	done();
+    });
+    pool.end()
+});
+
+app.post('/slider_response',function(req,res){
+//save the response in db
+    var pool = new pg.Pool(
+	{connectionString:process.env.DATABASE_URL}
+    )    
+    // connection using created pool
+    pool.connect(function(err, client, done) {
+    	client.query('insert into slider_responses values ($1,$2)', //NOTE this assumes table responses exists with cols 'time', 'responseobj' !
+		     [Date.now(),
+		     req.body.myresponse],
     		     function(err, result){
     			 if (err)
     			 {console.error(err); res.send("Error " + err); } //For now the client just prints the error to the console. What's ideal?

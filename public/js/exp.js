@@ -7,6 +7,7 @@ var ppntID = localStorage.getItem("ppntID");
 var autojitter = false; //adds jitter to every rocket draw: turn off for sliders, turn on for pairs/triads. (sorry *again* about global var mess :-( )
 var rockets_clickable = false; //again turn off for sliders, turn on for pairs/triads. Such a hack, sliders wasn't part of the initial design. Oh well.
 var drawtime = "init";
+var sliderValuesVisible = true; //have a round of value visible sliders, then a round of value invisible sliders?
 
 function sliderfeasible(a,b,c){
     //slider-feature can only be in 0-1. So a*b must be in [0, c] for the slider task to be passable.
@@ -328,6 +329,8 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
     
     this.flight_value = fuel_value * base_value;
 
+    this.drewAt = "not drawn yet";
+	
     this.mystats = function(){
 
 	return (this.type)+":"+
@@ -336,7 +339,29 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
 	(" flight "+this.flight_value);
     }
 
+    this.drawMyValue = function(){
+	//copypaste from drawMe, must match. :-( Sobbing about the ugliness of this copypaste. Right pattern is to make all these vals obj vars and refer back to them from the draw methods. Wouldn't be hard to fix.
+	
+	var stimsize = 2.5; //Multiply all drawing distances by this.	
+	var bw = 10*stimsize; //bodywidth (halved, center-to-edge dist)
+	var bh = 20*stimsize; //bodyheight
+	var hw = 5*stimsize; //hatwidth (overhang bit only)
+	var hh = bh*(2/3); //hatheight (simsize already factored into bh)
+	var lh = bh*(3/4); //leg height
+
+	var canvas = document.getElementById("ubercanvas");
+	var ctx = canvas.getContext('2d');
+	// ctx.clearRect(0,0,canvas.width,canvas.height);
+	// abs_holder_div.innerHTML = "";
+	
+	ctx.font = "1.5em Arial";
+	ctx.fillStyle =  "black"
+	ctx.textAlign = "center";
+	ctx.fillText((fuel_value * base_value * 100).toPrecision(3), this.drewAt[0]-hw, this.drewAt[1]-bh-hh-10);
+    }
+    
     this.drawMe = function(x, y){
+	this.drewAt = [x,y];
 	var maxjitter = 50;
 	if(autojitter){//obligatory jitter at draw time controlled by global var: off for sliders, on for pairs/triads.
 	    x=x+Math.random()*maxjitter-maxjitter/2; 
@@ -447,6 +472,26 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
 }
 
 function sliderfeedback(){
+    var sliderinfo = {
+    	ppntID : ppntID,
+	base1 : sliderRocket1.base,
+	base2 : sliderRocket2.base,
+	fuel1 : sliderRocket1.fuel,
+	fuel2 : sliderRocket2.fuel,
+	fueltype1 : sliderRocket1.type,
+	fueltype2 : sliderRocket2.type,
+	valuegap : (sliderRocket2.flight_value-sliderRocket1.flight_value),
+	whichtrial : trialIndex,
+	sliderfeature : trials[trialIndex].sliderfeature,
+	drawtime: drawtime,
+	responsetime: Date.now()
+    }
+
+    console.log("save: "+JSON.stringify(sliderinfo));
+    $.post('/slider_response',{myresponse:JSON.stringify(sliderinfo)},function(success){
+    	console.log(success);//For now server returns the string "success" for success, otherwise error message.
+    });
+    
     var valuegap = (sliderRocket2.flight_value-sliderRocket1.flight_value);
 
     var target_feedback;
@@ -468,7 +513,7 @@ function sliderfeedback(){
 		  "Your rocket is more expensive, try again",
 		  "Close enough!"+(valuegap<0 ? "Your rocket is cheaper by "+Math.round(Math.abs(valuegap*100)) :
 					"Your rocket is more expensive by "+Math.round(valuegap*100)),
-		  "Perfect match!"
+		  "Good match!"
 		 ][target_feedback],
 		 canvas.width/2, canvas.height/2);
 
@@ -705,11 +750,6 @@ function nextTrial(){
     trialIndex++;
     live_clickables = [];
     drawtime = "init";
-    if(trialIndex>slidertrials.length){ //= rather than >= because of the splash screen.
-	autojitter = true;
-	rockets_clickable = true;//gods this global vars thing is so horrible, I'm sorry. Not an excuse, but it's because sliders were added late.
-	document.getElementById("sliderdiv").innerHTML="";//Everything here is kludge and bad.
-    }
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -801,14 +841,14 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     
     var mytrial = new pair_trial(rockets[0],
 				 rockets[1],
-				 "Which rocket has the cheapest "+targ_feature+"?", ans);
+				 "Which rocket has the best "+targ_feature+"?", ans);
 
     return(mytrial);
     //trials.push(mytrial);
 }
 
 
-//MAIN
+//exp setup. Position in the file messed up by addition of sliders, sorry.
 var trialIndex = -1; //increment-first order in nextTrial() means trials[trialIndex] refers to the current trial.
 var trials = []; //still collect an array of all trials even when generating on the fly, because accessing trials[trialIndex] is so handy. (bad pattern?)
 
@@ -958,14 +998,16 @@ var sliderRocket2;
 function slidertrial(targ_rocket, probe_rocket, sliderfeature){
     this.rocket1 = targ_rocket;
     this.rocket2 = probe_rocket;
+    this.sliderfeature = sliderfeature;
     
     this.drawMe = function(){
+	drawtime = Date.now();
 	sliderRocket1 = targ_rocket; //argh the pain of communicating via global vars. Sorry again.
 	sliderRocket2 = probe_rocket;
 
 	//slider bit:
 	document.getElementById("sliderdiv").innerHTML=("<div class=\"slidecontainer\" id='sliderdiv'>"+
-		       "<p class='centered'>Adjust the slider until the two rockets cost the same, then click done</p>"+
+		       "<p class='centered'>Adjust the slider until the two rockets cost roughly the same, then click done</p>"+
 		       "<input type=\"range\" min=\"1\" max=\"100\" value=\"50\" class=\"slider\" id=\"myRange\">"+
 //		       "<p class='centered'><button onclick='alert('boo')'>Done</button></p>"+
 		       "</div><div id='uberdiv'></div>");
@@ -992,8 +1034,8 @@ var slider = document.getElementById("myRange");
 					   sliderRocket2.basetype,
 					   "sliderrocket")
 	    }
-	    sliderRocket1.drawMe(mid_x - gapwidth, mid_y);
-	    sliderRocket2.drawMe(mid_x + gapwidth, mid_y);
+	    sliderRocket1.drawMe(mid_x - gapwidth, mid_y); if(sliderValuesVisible)sliderRocket1.drawMyValue();
+	    sliderRocket2.drawMe(mid_x + gapwidth, mid_y); if(sliderValuesVisible)sliderRocket2.drawMyValue();
 
     	ctx.fillStyle = "grey";
 	ctx.fillRect(mid_x-gapwidth, mid_y+150, 2*gapwidth,100);
@@ -1023,9 +1065,10 @@ var slider = document.getElementById("myRange");
     }//end drawMe
 }//end slidertrial
 
-//SLIDER DEMO MAIN
-var slidertrials = [];
-var reps_per_slidertype = 3;
+
+get_arr_of_slidertrials = function(reps_per_slidertype){
+    var slidertrials = [];
+//    var reps_per_slidertype = 3;
 var slidertypes = ["base","barbar","colorcolor","barcolor","colorbar"];
 for(var i = 0; i<reps_per_slidertype;i++){
     for(var myslidertype=0;myslidertype<slidertypes.length;myslidertype++){
@@ -1035,9 +1078,9 @@ for(var i = 0; i<reps_per_slidertype;i++){
     var c = Math.random();
 
     while(!sliderfeasible(a,b,c)){
-	var a = Math.random();
-	var b = Math.random();
-	var c = Math.random();
+	a = Math.random();
+	b = Math.random();
+	c = Math.random();
     }
     //actually you probably want to push specific trial types: fuel sliders & base sliders for bar/color comparison types.
 	if(slidertypes[myslidertype]=="base"){
@@ -1079,16 +1122,48 @@ for(var i = 0; i<reps_per_slidertype;i++){
 	
     }//end for each slidertype (there has got to be a cleaner way to do walk-throughs...    
 }//end reps-for-each-slidertype
+    return(slidertrials)
+}
 
+//global vars determine how rockets are drawn and if they are clickable. These trials flag regime changes.
+//I'm aware of how f-ing terrible a pattern this is. No further comments at this time, thank you for your understanding.
+triggerValuesOff = function(){
+    this.drawMe = function(){
+	sliderValuesVisible = false;
+	nextTrial();
+    }
+}
 
+triggerEndOfSliders = function(){
+    this.drawMe = function(){
+	autojitter = true;
+	rockets_clickable = true;//gods this global vars thing is so horrible, I'm sorry. Not an excuse, but it's because sliders were added late.
+	document.getElementById("sliderdiv").innerHTML="";//Everything here is kludge and bad.
+	nextTrial();
+    }
+}
 
-trials.push(new splashScreen("Build a rocket!"))
+//MAIN
+//ACTUALLY BUILDING THE EXP (PUSHING STIM TO TRIALS) STARTS HERE
+
+trials.push(new splashScreen("Build a matching rocket (with guides)"))
+var slidertrials = get_arr_of_slidertrials(1);
 shuffle(slidertrials);
 for(var i=0;i<slidertrials.length;i++){
     trials.push(slidertrials[i]);
 }
 
-//putting it all together:
+trials.push(new splashScreen("Build a matching rocket without guides!"));
+trials.push(new triggerValuesOff());
+
+slidertrials = get_arr_of_slidertrials(3);
+shuffle(slidertrials);
+for(var i=0;i<slidertrials.length;i++){
+    trials.push(slidertrials[i]);
+}
+
+trials.push(new triggerEndOfSliders());
+
 trials.push(new splashScreen("Which rocket has the best base?"))
 shuffle(basetraining);
 for(var i=0;i<basetraining.length;i++){trials.push(basetraining[i])}
