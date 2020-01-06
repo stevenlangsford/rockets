@@ -529,7 +529,17 @@ function feedback(what_kind){
     if(!["correct","wrong"].includes(what_kind)){
 	//consider extending with other kinds eg no-comment.
 	error("bad feedback "+what_kind);
-    }   
+    }
+
+    //new cover story reverses correctness
+    if(what_kind =="correct"){
+	//oh my, the hilarity. Correct/wrong reversed for new cover story where performance is all the same and 'cheapest' is good, and it seems more intuitive to map 'cheaper' to 'smaller'. Note this also changes the meaning of all option locations, dominated decoys are on the other side.
+	what_kind = "wrong"
+    }else{
+	what_kind = "correct"
+    }
+    //end new cover story madness I'm so sorry.
+    
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -841,7 +851,7 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     
     var mytrial = new pair_trial(rockets[0],
 				 rockets[1],
-				 "Which rocket has the best "+targ_feature+"?", ans);
+				 "Which rocket has the cheapest "+targ_feature+"?", ans);
 
     return(mytrial);
     //trials.push(mytrial);
