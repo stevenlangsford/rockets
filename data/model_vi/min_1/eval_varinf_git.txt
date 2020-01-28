@@ -1,0 +1,1 @@
+https://github.com/yao-yl/Evaluating-Variational-Inference/blob/master/R_code/Figure_1_linear_reg_cgr.R
