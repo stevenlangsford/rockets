@@ -1,4 +1,4 @@
-library(tidyverse)
+library(tidyverse) #bad copy-paste :-(
 library(rstan)
 library(shinystan)
 library(patchwork)
@@ -7,65 +7,37 @@ set.seed(4);#chosen by fair die roll
 ##init
 theme_set(theme_light())
 rm(list = ls()) #Todo, remap C-c C-b to new R session, stop doing this.
-triadsdf <- read.csv("triadresponsedata.csv", stringsAsFactors = FALSE)
+triadsdf <- read.csv("miniwedell.csv", stringsAsFactors = FALSE)
 
 ##SET PARAMS
-color_est_noise <- .1
-height_est_noise <- .1
-base_est_noise <- .1
+prob_est_noise <- .01
+pay_est_noise <- .5
+##check this puts the effective calc-obs noise in the right ballpark?
+k <-  (1/(prob_est_noise^2)-4)/8 #sd(beta(k,k)) is prob_est_noise
+hackcheck_n <- 10000
+sd(rbeta(hackcheck_n,k,k)*rnorm(hackcheck_n, 19.6, pay_est_noise))#option calcsd
+##RMSE is .35 (note alpha 1.5) pg 377
 
-colorheight_comparison_noise <- 0.1 #Not used at the moment: future target.
-colorcolor_comparison_noise <- .1
-heightheight_comparison_noise <- .1
-base_comparison_noise <- .1
-
-##tolerance: fixed, or some JSD based on comparison noise, or what? Important.
-colorheight_tolerance <- colorheight_comparison_noise / 2
-colorcolor_tolerance <- colorcolor_comparison_noise / 2
-heightheight_tolerance <- heightheight_comparison_noise / 2
-base_tolerance <- base_comparison_noise / 2
+prob_tolerance <- 0.011
+pay_tolerance <- 1.1
 
 ordobs_error <- .01 #with this prob, ordobs drawn from sample(c(1,2,3),1)
 ##implementation in `ordobs' fn. Appears as a constant in .stan, should match.
 
 ##END PARAMS
 
-##helper fns
+## .stan refers to these noise settings via copy-paste of magic numbers!
 featurenoise <- function(featuretype) {
-    if (featuretype == "color") return(color_est_noise)
-    if (featuretype == "height") return(height_est_noise)
-    if (featuretype == "base") return(base_est_noise)
+    if (featuretype == "prob") return(prob_est_noise)
+    if (featuretype == "pay") return(pay_est_noise)
 }
 
 comparison_noise <- function(feature1, feature2) {
-    if (feature1 == "base" || feature2 == "base") {
-        return(base_comparison_noise)
-    }
-    if ("color" %in% c(feature1, feature2) &&
-        "height" %in% c(feature1, feature2)) {
-        return(colorheight_comparison_noise)
-    }
-    if (feature1 == "color" && feature2 == "color") {
-        return(colorcolor_comparison_noise)
-    }
-    if (feature1 == "height" && feature2 == "height") {
-        return(heightheight_comparison_noise)
-    }
+    return(.1)
 }
 comparison_tolerance <- function(feature1, feature2) {
-    if (feature1 == "base" || feature2 == "base") {
-        return(base_tolerance)
-    }
-    if ("color" %in% c(feature1, feature2) &&
-        "height" %in% c(feature1, feature2)) {
-        return(colorheight_tolerance)
-    }
-    if (feature1 == "color" && feature2 == "color") {
-        return(colorcolor_tolerance)
-    }
-    if (feature1 == "height" && feature2 == "height") {
-        return(heightheight_tolerance)
-    }
+    if (feature1 == "prob") return(prob_tolerance)
+    else return(pay_tolerance)
 }
 
 ordobs <- function(f1_value, f2_value, f1_type, f2_type){
@@ -89,9 +61,8 @@ ordobs <- function(f1_value, f2_value, f1_type, f2_type){
 
 gettype <- function(row, feature, option) {
     if (feature == 1) {
-        return("base")
-    }
-    return(row[, paste0("fueltype", option)])
+        return("prob")
+    } else return("pay")
 }
 
 calcobs_set <- function(arow, trialid) {
@@ -100,22 +71,20 @@ calcobs_set <- function(arow, trialid) {
         trialid = trialid,
         option = rep(c(1, 2, 3), 2),
         feature = rep(c(1, 2), each = 3),
-        featuretype = c("base",
-                        "base",
-                        "base",
-                        arow$fueltype1,
-                        arow$fueltype2,
-                        arow$fueltype3),
-        calcobs = c(rnorm(1, arow$base1, featurenoise("base")),
-                    rnorm(1, arow$base2, featurenoise("base")),
-                    rnorm(1, arow$base3, featurenoise("base")),
-                    rnorm(1, arow$fuel1, featurenoise(arow$fueltype1)),
-                    rnorm(1, arow$fuel2, featurenoise(arow$fueltype2)),
-                    rnorm(1, arow$fuel3, featurenoise(arow$fueltype3))
+        featuretype = c("prob",
+                        "prob",
+                        "prob",
+                        "pay",
+                        "pay",
+                        "pay"),
+        calcobs = c(rnorm(1, arow$base1, featurenoise("prob")),
+                    rnorm(1, arow$base2, featurenoise("prob")),
+                    rnorm(1, arow$base3, featurenoise("prob")),
+                    rnorm(1, arow$fuel1, featurenoise("pay")),
+                    rnorm(1, arow$fuel2, featurenoise("pay")),
+                    rnorm(1, arow$fuel3, featurenoise("pay"))
                     )
-    )#end data frame
-
-    levels(myobs$featuretype) <- c("base", "color", "height")
+        )
     return(myobs)
 }
 
@@ -132,7 +101,7 @@ ordobs_set <- function(arow, trialid){
                                           option1 = anoption1,
                                           option2 = anoption2,
                                           feature = afeature,
-                                          featuretype = paste0(sort(c(gettype(arow,afeature,anoption1),gettype(arow,afeature,anoption2))),collapse=""),
+                                          featuretype = afeature,
                                           ordobs = ordobs(
                                               arow[
                                                   paste0(
@@ -145,14 +114,14 @@ ordobs_set <- function(arow, trialid){
                                                       anoption2)
                                               ],
                                               (if (afeature == 1) {
-                                                   "base"
+                                                   "prob"
                                                } else{
-                                                   arow[paste0("fueltype", anoption1)]
+                                                   "pay"
                                                }),
                                               (if (afeature == 1) {
-                                                   "base"
+                                                   "prob"
                                                } else{
-                                                   arow[paste0("fueltype", anoption2)]
+                                                   "pay"
                                                })
                                           )#ordobs call
                                       )#data frame
@@ -160,20 +129,14 @@ ordobs_set <- function(arow, trialid){
             }#opt2
         }#opt1
     }#feature
-
-    ##If not all levels are present, as.numeric() might be inconsistent in how it encodes these! Stan sees them as index-integers.
-    levels(myobs$featuretype) <- c("basebase",
-                                   "colorcolor",
-                                   "colorheight",
-                                   "heightheight")
     return(myobs)
 }
 
 ##MAIN: trial setup
-testtrials <- triadsdf %>%
-    filter(triadtype == "dominated_decoy") %>%
-    head(3)
-                                        #sample_n(50)
+testtrials <- triadsdf
+
+
+
 mytrial <- data.frame()
 for (i in 1:150) {
     mytrial <- rbind(mytrial, testtrials)
@@ -188,6 +151,7 @@ for (i in 1:nrow(mytrial)) {
     mycalcobs <- rbind(mycalcobs, calcobs_set(mytrial[i, ], i))
 }
 
+
 ##get some inferred option values:
 mydatalist <- list(
     n_ordobs = nrow(myordobs),
@@ -200,21 +164,17 @@ mydatalist <- list(
     ordobs_feature = myordobs$feature,
     ordobs_featuretype = as.numeric(myordobs$featuretype),
     ordobs_obs = myordobs$ordobs,
-    ordobs_noise = c(colorheight_comparison_noise,
-                     colorcolor_comparison_noise,
-                     heightheight_comparison_noise,
-                     base_comparison_noise),
-
     calcobs_trialid = mycalcobs$trialid,
     calcobs_opt = mycalcobs$option,
     calcobs_feature = mycalcobs$feature,
     calcobs_featuretype = as.numeric(mycalcobs$featuretype),
     calcobs_obs = mycalcobs$calcobs,
-    calcobs_noise = c(color_est_noise, height_est_noise, base_est_noise)
+    calcobs_noise = c(prob_est_noise, pay_est_noise)
 )
 
 
-mod <-  stan_model(file = "howes16.stan")
+
+mod <-  stan_model(file = "howes16_wedell.stan")
 vbfit <- vb(mod, data = mydatalist, output_samples = 4000, seed = 1)
 
 visamples <- as.data.frame(extract(vbfit, permuted = TRUE))
@@ -222,7 +182,9 @@ visamples <- as.data.frame(extract(vbfit, permuted = TRUE))
 ##inference done: visualize the results
 trial_vis <- function(targtrial){
     vidf <- visamples %>%
-        select(matches(paste0("featurevalues.*\\.", targtrial, "$"))) %>%
+        select(matches(
+            paste0("featurevalues.*\\.", targtrial, "$")
+            )) %>%
     rename(base1 = 1, fuel1 = 2,
            base2 = 3, fuel2 = 4,
            base3 = 5, fuel3 = 6)
@@ -240,7 +202,9 @@ trial_vis <- function(targtrial){
         geom_point(aes(x = base2, y = fuel2, shape = fueltype2),
                    size = 5, color = "green") +
         geom_point(aes(x = base3, y = fuel3, shape = fueltype3),
-                   size = 5, color = "blue") +
+                   size = 5, color = "blue")
+
+        +
         xlim(c(0, 1)) +
         ylim(c(0, 1)) +
         xlab("base") + ylab("fuel") +
@@ -260,10 +224,10 @@ trial_vis <- function(targtrial){
     )
 }
 
-for (i in 1:nrow(mytrial)){
-    ggsave(trial_vis(i),
-           file = paste0("trial_flipbook/trial", i, ".png"), width = 10)
-}
+## for (i in 1:nrow(mytrial)){
+##     ggsave(trial_vis(i),
+##            file = paste0("trial_flipbook/trial", i, ".png"), width = 10)
+## }
 
 ##single trials are at the mercy of rnd generated obs: check aggregate prefs
 effectdf <- visamples %>%
@@ -280,8 +244,8 @@ for (i in 1:nrow(effectdf)) {
 }
 
 effectdf <- effectdf %>% arrange(seqno)
-effectdf$trialtype <- 1:3
+## effectdf$trialtype <- 1:3
 
-effects_plot <- ggplot(effectdf, aes(x=bestchoice)) + geom_bar() + facet_grid(.~trialtype)
+## effects_plot <- ggplot(effectdf, aes(x=bestchoice)) + geom_bar() + facet_grid(.~trialtype)
 
-ggsave(effects_plot, file = "effects.png", width = 10)
+## ggsave(effects_plot, file = "effects.png", width = 10)

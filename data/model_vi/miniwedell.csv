@@ -1,0 +1,6 @@
+"","ppntID","triadtype","presentation","base1","base2","base3","fuel1","fuel2","fuel3","fueltype1","fueltype2","fueltype3","choice_base","choice_fuel","choice_fueltype","drawtime","responsetime"
+"1",1,"wedell",NA,0.67,0.5,0.45,15,20,18,"height","height","height",NA,NA,"height",NA,NA
+"2",1,"wedell",NA,0.4,0.67,0.78,25,15,12,"height","height","height",NA,NA,"height",NA,NA
+"3",1,"wedell",NA,0.5,0.4,0.62,20,25,15,"height","height","height",NA,NA,"height",NA,NA
+"4",1,"wedell",NA,0.83,0.5,0.67,12,20,13,"height","height","height",NA,NA,"height",NA,NA
+"5",1,"wedell",NA,0.67,0.67,0.62,15,15,15,"height","height","height",NA,NA,"height",NA,NA

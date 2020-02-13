@@ -1,0 +1,143 @@
+library(tidyverse)
+
+rm(list = ls()) #fix your emacs so you can stop commenting how bad this is!
+theme_set(theme_light())
+
+##convention: an option is c(prob, payoff)
+##a trial is c(option1, option2, option3)
+
+options_A <- list(
+    c(.4, 25),
+    c(.5, 20),
+    c(.67, 15),
+    c(.83, 12)
+)
+    
+options_B <- list(
+    c(.3, 33),
+    c(.4, 25),
+    c(.5, 20),
+    c(.67, 15)
+)
+
+## R, F,  RF, distinction not important here?
+decoys <- list(
+    c(.4, 20), #R
+    c(.5, 18),
+    c(.67, 13),
+    c(.83, 10),
+    c(.25, 33),
+    c(.35, 25),
+    c(.45, 20),
+    c(.62, 15),
+    c(.35, 25), #F
+    c(.45, 20),
+    c(.62, 15),
+    c(.78, 12),
+    c(.3, 30),
+    c(.4, 20),
+    c(.5, 18),
+    c(.67, 13),
+    c(.35, 20), #RF
+    c(.45, 18),
+    c(.62, 13),
+    c(.78, 10),
+    c(.25, 30),
+    c(.35, 20),
+    c(.45, 18),
+    c(.62, 13)
+)
+
+opt_value <- function(anoption) {
+    return(anoption[1] * anoption[2])
+}
+
+##sanity check:
+everything <- c(options_A, options_B, decoys)
+optvals_df <- data.frame(optionID = 1:length(everything),
+                         optiontype = c(rep("A",length(options_A)),
+                                         rep("B", length(options_B)),
+                                         rep("decoy", length(decoys))
+                                         ),
+                         optionvalue = sapply(everything, opt_value)
+                         )
+## ggplot(optvals_df, aes(x = optionvalue, fill = optiontype)) +
+##     geom_histogram(alpha = .5, binwidth = .01)
+
+
+##rockets data df format is:
+##ppntID	triadtype	presentation	base1	base2	base3	fuel1	fuel2	fuel3	fueltype1	fueltype2	fueltype3	choice_base	choice_fuel	choice_fueltype	drawtime	responsetime
+
+wedell_allcombo_df <- data.frame()
+
+for (anA in options_A) {
+    for (aB in options_B) {
+        for (adecoy in decoys) {
+            wedell_allcombo_df <- rbind(wedell_allcombo_df,
+                                  data.frame(
+                                      ppntID = 1,
+                                      triadtype = "wedell",
+                                      presentation = NA,
+                                      base1 = anA[1],
+                                      base2 = aB[1],
+                                      base3 = adecoy[1],
+                                      fuel1 = anA[2],
+                                      fuel2 = aB[2],
+                                      fuel3 = adecoy[2],
+                                      fueltype1 = "height",
+                                      fueltype2 = "height",
+                                      fueltype3 = "height",
+                                      choice_base = NA,
+                                      choice_fuel = NA,
+                                      choice_fueltype = "height",
+                                      drawtime = NA,
+                                      responsetime = NA
+                                  )
+                                  )
+        }
+    }
+}
+
+
+##simworld
+##The probabilities p were Beta(a= 1, b=1)
+##The values v were normal (mu= 100, sigma= 5)
+howes_simtrials_df <- data.frame()
+ntrials = 10 #10^7 in paper
+
+rnd_option <- function() {
+    return(c(rbeta(1, 1, 1), rnorm(1, 100, 5)))
+    }
+
+rnd_simtrial <- function() {
+    return(list(rnd_option(), rnd_option(), rnd_option()))
+}
+
+for (i in 1:ntrials) {
+    mytrial <- rnd_simtrial()
+    
+    howes_simtrials_df <- rbind(howes_simtrials_df,
+                                  data.frame(
+                                      ppntID = 1,
+                                      triadtype = "hsim",
+                                      presentation = NA,
+                                      base1 = mytrial[[1]][1],
+                                      base2 = mytrial[[2]][1],
+                                      base3 = mytrial[[3]][1],
+                                      fuel1 = mytrial[[1]][2],
+                                      fuel2 = mytrial[[2]][2],
+                                      fuel3 = mytrial[[3]][2],
+                                      fueltype1 = "height",
+                                      fueltype2 = "height",
+                                      fueltype3 = "height",
+                                      choice_base = NA,
+                                      choice_fuel = NA,
+                                      choice_fueltype = "height",
+                                      drawtime = NA,
+                                      responsetime = NA
+                                  )
+                                  )
+}
+
+##output:
+write.csv(sample_n(wedell_allcombo_df, 5), file="miniwedell.csv")
