@@ -13,9 +13,10 @@ triadsdf <- read.csv("miniwedell.csv", stringsAsFactors = FALSE)
 prob_est_noise <- .01
 pay_est_noise <- .5
 ##check this puts the effective calc-obs noise in the right ballpark?
-k <-  (1/(prob_est_noise^2)-4)/8 #sd(beta(k,k)) is prob_est_noise
+k <-  (1 / (prob_est_noise^2) - 4) / 8 #sd(beta(k,k)) is prob_est_noise
 hackcheck_n <- 10000
-sd(rbeta(hackcheck_n,k,k)*rnorm(hackcheck_n, 19.6, pay_est_noise))#option calcsd
+#option calcsd
+sd(rbeta(hackcheck_n, k, k) * rnorm(hackcheck_n, 19.6, pay_est_noise))
 ##RMSE is .35 (note alpha 1.5) pg 377
 
 prob_tolerance <- 0.011
@@ -180,6 +181,18 @@ visamples <- as.data.frame(extract(vbfit, permuted = TRUE))
 
 
 ##inference done: visualize the results
+barestim_vis <- function(targtrial) {
+    dotsize <- 7
+    ggplot(mytrial[targtrial, ]) +
+        geom_point(aes(x = base1, y = fuel1, shape = fueltype1),
+                   size = dotsize, color = "red") +
+        geom_point(aes(x = base2, y = fuel2, shape = fueltype2),
+                   size = dotsize, color = "green") +
+        geom_point(aes(x = base3, y = fuel3, shape = fueltype3),
+                   size = dotsize, color = "blue") +
+        theme(legend.position = "none")
+}
+
 trial_vis <- function(targtrial){
     vidf <- visamples %>%
         select(matches(
@@ -236,17 +249,26 @@ effectdf <- visamples %>%
               two = sum(choice == 2),
               three = sum(choice == 3)
               )
+
 for (i in 1:nrow(effectdf)) {
-    effectdf[i, "bestchoice"] <- which(effectdf[i, 2:4] == max(effectdf[i, 2:4]))
+    effectdf[i, "bestchoice"] <- which(effectdf[i, 2:4] == max(effectdf[i, 2:4]))[1]
     effectdf[i, "seqno"] <- as.numeric(strsplit(effectdf$trial[i],"\\.")[[1]][2])
 }
 
 effectdf <- effectdf %>% arrange(seqno)
+effectdf$trialtype <- 1:nrow(testtrials)
 
-trial_vis(1)
+##ok effectdf seems to mean what you want it to.
+##but these plots following are shite. Effectrow needs to be col coded.
+##and the wedellesque stim are not the wedell ones you want.
 
-## effectdf$trialtype <- 1:3
+effectrow <- ggplot(effectdf, aes(x = bestchoice)) +
+    geom_bar(position = "dodge") +
+    facet_grid(.~trialtype)
 
-## effects_plot <- ggplot(effectdf, aes(x=bestchoice)) + geom_bar() + facet_grid(.~trialtype)
+stimrow <- ggplot()
+for (i in 1:nrow(testtrials)) {
+    stimrow <- stimrow + barestim_vis(i)
+}
 
-## ggsave(effects_plot, file = "effects.png", width = 10)
+effectrow/stimrow
