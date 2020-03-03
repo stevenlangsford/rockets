@@ -90,6 +90,32 @@ calcobs_set <- function(arow, trialid) {
     return(myobs)
 }
 
+perfect_calcobs_set <- function(arow, trialid) {
+    #Same format as calcobs_set, but with no noise. (used to inspect effect of ordobs)
+    myobs <- data.frame(
+        ppntid = arow$ppntID,
+        trialid = trialid,
+        option = rep(c(1, 2, 3), 2),
+        feature = rep(c(1, 2), each = 3),
+        featuretype = factor(c("prob",
+                        "prob",
+                        "prob",
+                        "pay",
+                        "pay",
+                        "pay"), levels = c("prob", "pay")),
+        calcobs = c(rnorm(1, arow$base1, 0),
+                    rnorm(1, arow$base2, 0),
+                    rnorm(1, arow$base3, 0),
+                    rnorm(1, arow$fuel1, 0),
+                    rnorm(1, arow$fuel2, 0),
+                    rnorm(1, arow$fuel3, 0)
+                    )
+    )
+    levels(myobs$featuretype) <- c("prob", "pay");#factor levels passed as integers to stan with as.numeric, so please be explicit.
+    return(myobs)
+}
+
+
 ordobs_set <- function(arow, trialid){
     myobs <- data.frame()
     
@@ -133,9 +159,10 @@ ordobs_set <- function(arow, trialid){
     }#feature
     return(myobs)
 }
+stop("pivot to systematic_obs.R happens here.")
 
 ##MAIN: trial setup
-testtrials <- triadsdf
+testtrials <- triadsdf[1:30, ]
 
 mytrial <- data.frame()
 for (i in 1:150) {
@@ -180,60 +207,7 @@ vbfit <- vb(mod, data = mydatalist, output_samples = 4000, seed = 1)#4000
 visamples <- as.data.frame(extract(vbfit, permuted = TRUE))
 
 
-##inference done: visualize the results
-barestim_vis <- function(targtrial) {
-    dotsize <- 7
-    ggplot(mytrial[targtrial, ]) +
-        geom_point(aes(x = base1, y = fuel1, shape = fueltype1),
-                   size = dotsize, color = "red") +
-        geom_point(aes(x = base2, y = fuel2, shape = fueltype2),
-                   size = dotsize, color = "green") +
-        geom_point(aes(x = base3, y = fuel3, shape = fueltype3),
-                   size = dotsize, color = "blue") +
-        theme(legend.position = "none")
-}
-
-trial_vis <- function(targtrial){
-    vidf <- visamples %>%
-        select(matches(
-            paste0("features.*\\.", targtrial, "$")
-        ))  %>%
-    rename(base1 = 1, fuel1 = 4,#UGHHH
-           base2 = 2, fuel2 = 5,
-           base3 = 3, fuel3 = 6)
-
-    return(
-        ggplot(mytrial[targtrial, ]) +
-        geom_point(data = vidf,
-                   aes(x = base1, y = fuel1), color = "red", alpha = .1) +
-        geom_point(data = vidf,
-                   aes(x = base2, y = fuel2), color = "green", alpha = .1) +
-        geom_point(data = vidf,
-                   aes(x = base3, y = fuel3), color = "blue", alpha = .1) +
-        geom_point(aes(x = base1, y = fuel1, shape = fueltype1),
-                   size = 5, color = "red") +
-        geom_point(aes(x = base2, y = fuel2, shape = fueltype2),
-                   size = 5, color = "green") +
-        geom_point(aes(x = base3, y = fuel3, shape = fueltype3),
-                   size = 5, color = "blue")        +
-        ## xlim(c(0, 1)) +
-        ## ylim(c(0, 1)) +
-        xlab("base") + ylab("fuel") +
-        ggtitle(mytrial[targtrial, "triadtype"]) +
-        guides(shape = FALSE) +
-        ggplot(
-            visamples %>% #this whole rigmarole is just to get control over bar fill :-(
-            select(matches(paste0("bestoption.", targtrial))) %>%
-            rename(choice = 1) %>%
-            summarize(one = sum(choice == 1),
-                      two = sum(choice == 2),
-                      three = sum(choice == 3)
-                      )) +
-        geom_bar(stat = "identity", aes(x = "1_one", y = one, fill = "1")) +
-        geom_bar(stat = "identity", aes(x = "2_two", y = two, fill = "2")) +
-        geom_bar(stat = "identity", aes(x = "3_three", y = three, fill = "3"))
-    )
-}
+source("vis.R")
 
 ## for (i in 1:nrow(mytrial)){
 ##     ggsave(trial_vis(i),
@@ -248,8 +222,8 @@ effectdf <- visamples %>%
     summarize(one = sum(choice == 1),
               two = sum(choice == 2),
               three = sum(choice == 3)
-              )
-
+              ) %>% ungroup()
+##There must be a tidier way of doing this!
 for (i in 1:nrow(effectdf)) {
     effectdf[i, "bestchoice"] <- which(effectdf[i, 2:4] == max(effectdf[i, 2:4]))[1]
     effectdf[i, "seqno"] <- as.numeric(strsplit(effectdf$trial[i],"\\.")[[1]][2])
@@ -258,17 +232,33 @@ for (i in 1:nrow(effectdf)) {
 effectdf <- effectdf %>% arrange(seqno)
 effectdf$trialtype <- 1:nrow(testtrials)
 
-##ok effectdf seems to mean what you want it to.
-##but these plots following are shite. Effectrow needs to be col coded.
-##and the wedellesque stim are not the wedell ones you want.
+effectdf <- effectdf %>%
+    group_by(trialtype) %>%
+    summarize(chose_one = sum(bestchoice == 1),
+              chose_two = sum(bestchoice == 2),
+              chose_three = sum(bestchoice == 3)
+              ) %>% ungroup()
 
-effectrow <- ggplot(effectdf, aes(x = bestchoice)) +
-    geom_bar(position = "dodge") +
-    facet_grid(.~trialtype)
 
-stimrow <- ggplot()
 for (i in 1:nrow(testtrials)) {
-    stimrow <- stimrow + barestim_vis(i)
+ggsave((ggplot(effectdf[i, ]) + #controls bar fill, but ugly code :-(
+    geom_bar(stat = "identity",
+             aes(x = "chose_one",
+                 y = chose_one, fill = "1")
+             ) +
+    geom_bar(stat = "identity",
+             aes(x = "chose_two",
+                 y = chose_two,
+                 fill = "2")
+             ) +
+    geom_bar(stat = "identity",
+             aes(x = "chose_three",
+                 y = chose_three,
+                 fill = "3")
+             ) +
+    theme(legend.position = "none")) +
+barestim_vis(i),
+    file = paste0("effect_flipbook/trial", i, ".png"),
+    width = 10
+    )
 }
-
-effectrow/stimrow
