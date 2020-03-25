@@ -104,7 +104,7 @@ double_trial_vis <- function(backtrial, fronttrial) {
         ## ylim(c(0, 1)) +
         xlab("base") + ylab("fuel") +
         ggtitle(mytrial[backtrial, "triadtype"]) +
-        guides(shape = FALSE)+
+        guides(shape = FALSE) +
         (ggplot(
                   visamples %>% #this whole rigmarole is just to get control over bar fill :-(
                   select(matches(paste0("bestoption.", backtrial))) %>%
@@ -115,7 +115,7 @@ double_trial_vis <- function(backtrial, fronttrial) {
                             )) +
          geom_bar(stat = "identity", aes(x = "1_one", y = one), fill = "grey") +
          geom_bar(stat = "identity", aes(x = "2_two", y = two), fill = "grey") +
-         geom_bar(stat = "identity", aes(x = "3_three", y = three), fill = "grey"))/
+         geom_bar(stat = "identity", aes(x = "3_three", y = three), fill = "grey") + xlab("") + ylab("")) /
         (ggplot(
             visamples %>% 
             select(matches(paste0("bestoption.", fronttrial))) %>%
@@ -127,7 +127,7 @@ double_trial_vis <- function(backtrial, fronttrial) {
          geom_bar(stat = "identity", aes(x = "1_one", y = one, fill = "1")) +
          geom_bar(stat = "identity", aes(x = "2_two", y = two, fill = "2")) +
          geom_bar(stat = "identity", aes(x = "3_three", y = three, fill = "3")) +
-         guides(fill = FALSE)
+         guides(fill = FALSE) + xlab("") + ylab("")
         )
     return(retplot)
 }

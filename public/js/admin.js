@@ -1,11 +1,11 @@
 var ppntID = Math.round(Math.random()*10000000);
 localStorage.setItem("ppntID",ppntID); //cookie alternative, retrive with localStorage.getItem("ppntID"). Only stores strings. Used in exp.js to tag trials.
 
-var dev = true;//used only in instuctionlist (immediately below) for the moment, could consider putting it in localStorage though and having it trigger verbosity later. Set to false if public-facing.
+var dev = false;//used only in instuctionlist (immediately below) for the moment, could consider putting it in localStorage though and having it trigger verbosity later. Set to false if public-facing.
 var instructionindex = 0;
 var instructionlist = [dev ? "Development version: <button onclick='startExp()'>Skip instructions</button>" : "Hi! These are the instructions. Please read them carefully, there will be a short quiz at the end.", "This is part of a study being run by the University of Michigan. By clicking 'Next', you are agreeing to take part in it. To participate, you must be over 18. You should know that you're free to withdraw at any time (although you'll only be paid on completion), and that although data gained from this study may be published or viewed by University of Michigan staff and relevant government offices, you will not be identified and your personal details will not be divulged, nor will anything be linked to your Turk Id. Any identifiable data will be used for administration only and deleted on completion of the study, non-identifiable data may be used in future research. </br><span style=\"font-size:.8em\">Please direct any questions about this study to Steven Langsford, reachable at <strong>slangsfo at umich dot edu</strong>. The principle investigator is Prof. Richard Lewis. If you have concerns regarding the ethics of this study and don't want to contact the investigators directly, you can contact the Health Sciences and Behavioral Sciences review board at irbhsbs at umich dot edu or phone: (734) 936-0933 or toll free, (866) 936-0933</span>","This study takes about 15 minutes, please only continue if you have 15 minutes free without interruptions. Although you will not directly benefit from being in this study, the results will help build more accurate descriptions of how people make decisions. We don't believe there are any risks from participating in this research.",
 
-		       "This study is about choice and decision making. The stimuli are toy rockets. You're trying to choose the best rocket from the options available.","Rockets have two features, legs and fuel. Wider legs are always better than narrow legs, and more fuel is always better than less fuel.","These two features have equal importance. They multiply together to give the distance the rocket flies. Ideally you want to be high on both. Medium values in both are sometimes better than high in one and low on the other, sometimes not. Low on both is definitely a disaster.","There's one twist making this more difficult. There are two different ways of displaying the amount of fuel, one using a grey bar and one using a color patch.","For rockets with a grey bar, the higher the bar, the more fuel the rocket has.","For rockets with a color patch, colors closer to blue mean less fuel, colors closer to yellow mean more fuel. Intermediate colors sometimes look more like pink or purple, the lighter more-yellow colors are better, the darker more-blue colors are worse. A bright blue tank is empty, a bright yellow tank is full.", "The display format is the only difference between rockets with a bar and rockets with a color patch. They're equally likely to be good, and they cover the same range of fuel values, just displayed in different ways.","You'll get some practice with the rockets first.","First, you'll be asked to make some judgments based only on the base, then some judgments based only on the fuel. Then you'll be asked to combine the two to compare two rockets. For all these items you'll get feedback on your choices.","Some of the trials are easy, but some are quite difficult! Please just give it your best shot.",""];
+		       "This study is about choice and decision making. The stimuli are toy rockets. You're trying to choose the best rocket from the options available.","Rockets have two stages, a stage-1 and a stage-2. They're both important to the performance of the rocket.","The stage-1 is the black bottom part of the rocket. Bigger is always better for stage-1. There are two kinds of stage-1, straight-sides and angle-sides. There's no difference between the two kinds, both formats are equally good.","The stage-2 is the top part of the rocket. There are two kinds of stage-2 as well, one with a grey bar, where taller bars are better, and one with a color patch, where colors that are more yellow are better. Again there's no difference between the two kinds, both formats are equally good.", "The two stages are equally important, and they multiply together to get the overall performance score. This means that if one of the stages is bad, the whole rocket will be pretty bad, even if the other stage is quite good. Ideally you want both stage-1 and stage-2 to be good.", "The first task gives you some practice with the rockets. You'll be shown two rockets, and you'll be able to set one of the features on one of the rockets with a slider. The task is to change the feature you control until the performance scores of the two rockets match. For the first few, you'll see the performance scores on the screen, which is essentially telling you the answer. But after that intro task the scores will be hidden and you'll have to judge when the two rockets match just by looking at the stage-1 and stage-2 features.", "In the second task, you'll be asked to judge the stages individually, identifying either the rocket with the best stage-1 or the best stage-2. Choose a rocket by clicking on it.","The third task asks you to choose the best rocket from a set, combining both the stage-1 and stage-2 to get the overall performance.","You'll be asked to pick the best of two or three rockets. Choose a rocket by clicking on it. The best rocket is the one with the best combination of stage-1 and stage-2. Then you're done! We expect the whole thing to take around 15 minutes.","Just to recap the most important part: The two stages of the rocket are equally important. They multiply together, so a bad score on one can spoil the whole thing. For the stage-1 part at the bottom, bigger is better. For the stage-2 part at the top, higher bars are better for rockets with a grey bar, colors that are more-yellow and less-blue are better for rockets with a color patch.","Some of the trials are easy, some are quite difficult. Please just give it your best shot."];
 
 function nextInstructions(){
     var nextButton = "<button id='nextbutton' onclick='nextInstructions()'>Next</button>"
@@ -20,31 +20,31 @@ function quiz(){
     scroll(0,0);
     document.getElementById("uberdiv").innerHTML="<h3>Are you ready?</h3></br>"+
 	"<span style='text-align:left'><p>"+
-	"<strong>Which color indicates a rocket has more fuel for rockets with a color-patch?</strong></br>"+
-	"<input type='radio' name='q1' id='q1a' value='a'>&nbsp Red means more fuel, green means less fuel.<br/>"+
-	"<input type='radio' name='q1' id='q1b' value='b'>&nbsp White means more fuel, grey means less fuel.<br/>"+
-	"<input type='radio' name='q1' id='q1c' value='c'>&nbsp Yellow means more fuel, blue means less fuel.<br/>"+
-	"<input type='radio' name='q1' id='q1d' value='d'>&nbsp Green means more fuel, red means less fuel.<br/>"+
+	"<strong>Which color indicates a rocket has a better stage-2 for rockets with a color-patch?</strong></br>"+
+	"<input type='radio' name='q1' id='q1a' value='a'>&nbsp Red is better, green is worse.<br/>"+
+	"<input type='radio' name='q1' id='q1b' value='b'>&nbsp White is better, grey is worse.<br/>"+
+	"<input type='radio' name='q1' id='q1c' value='c'>&nbsp Yellow better, blue is worse.<br/>"+
+	"<input type='radio' name='q1' id='q1d' value='d'>&nbsp Green better, red is worse.<br/>"+
 	"</span>"+
 	"<span style='text-align:left'><p>"+
-	"<strong>What kinds of legs are best on the rocket base? </strong></br>"+
-	"<input type='radio' name='q2' id='q2a' value='a'>&nbsp Wide legs are better, narrow legs are worse.<br/>"+
-	"<input type='radio' name='q2' id='q2b' value='b'>&nbsp Narrow legs are better, wide legs are worse.  <br/>"+
-	"<input type='radio' name='q2' id='q2c' value='c'>&nbsp Long legs are better, short legs are worse. <br/>"+
-	"<input type='radio' name='q2' id='q2d' value='d'>&nbsp Short legs are better, long legs are worse. <br/>"+
+	"<strong>What kind of stage-1 gives the best performance? </strong></br>"+
+	"<input type='radio' name='q2' id='q2a' value='a'>&nbsp Wider is better, narrower is worse.<br/>"+
+	"<input type='radio' name='q2' id='q2b' value='b'>&nbsp Narrower is better, wider is worse.  <br/>"+
+	"<input type='radio' name='q2' id='q2c' value='c'>&nbsp Taller is better, shorter is worse. <br/>"+
+	"<input type='radio' name='q2' id='q2d' value='d'>&nbsp Shorter is better, taller is worse. <br/>"+
 	"</span>"+
 	"<span style='text-align:left'><p>"+
-	 "<strong>How do the features combine to determine how far a rocket flies?</strong></br>"+
+	 "<strong>How do the stages combine to determine the overall performance of a rocket?</strong></br>"+
 	 "<input type='radio' name='q3' id='q3a' value='a'>&nbsp They add together, both are equally important. <br/>"+
 	 "<input type='radio' name='q3' id='q3b' value='b'>&nbsp They multiply together, both are equally important. <br/>"+
-	 "<input type='radio' name='q3' id='q3c' value='c'>&nbsp Rockets with more fuel go further, if the fuel is the same the one with a better base wins.<br/>"+
-	 "<input type='radio' name='q3' id='q3d' value='d'>&nbsp Rockets with a good base go further, if the base is the same the one with more fuel wins. <br/>"+
+	 "<input type='radio' name='q3' id='q3c' value='c'>&nbsp Stage-1 is more important, stage-2 acts as a tie-breaker.<br/>"+
+	 "<input type='radio' name='q3' id='q3d' value='d'>&nbsp Stage-2 is more important, stage-1 acts as a tie-breaker. <br/>"+
 	"</span>"+
 	"</br><button onclick='quizvalidate()'>Continue</button>";
 }
 
 function quizvalidate(){
-    var valid = document.getElementById("q1c").checked && document.getElementById("q2a").checked && document.getElementById("q3b").checked;
+    var valid = document.getElementById("q1c").checked && document.getElementById("q2c").checked && document.getElementById("q3b").checked;
     if(valid){demographics();}
     else{
 	alert("You didn't answer all the questions correctly. Please read through the instructions and take the quiz again to continue.");

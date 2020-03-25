@@ -115,7 +115,7 @@ app.get("/getsliderresponses",requireLogin,function(req,res){
 			   }
 
 		    var response_csv = json2csv({data: responses, fields:fields});
-		    res.attachment("triadresponsedata.csv");
+		    res.attachment("sliderresponsedata.csv");
 		    res.send(response_csv);
 		}
 	});//end query

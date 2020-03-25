@@ -357,7 +357,7 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
 	ctx.font = "1.5em Arial";
 	ctx.fillStyle =  "black"
 	ctx.textAlign = "center";
-	ctx.fillText((fuel_value * base_value * 100).toPrecision(3), this.drewAt[0]-hw, this.drewAt[1]-bh-hh-10);
+	ctx.fillText((fuel_value * base_value * 100).toPrecision(2), this.drewAt[0]-hw, this.drewAt[1]-bh-hh-10);
     }
     
     this.drawMe = function(x, y){
@@ -509,10 +509,10 @@ function sliderfeedback(){
     ctx.font = "1.5em Arial";
     ctx.fillStyle =  ["red", "red","green", "green"][target_feedback];
     ctx.textAlign = "center";
-    ctx.fillText(["Your rocket is cheaper, try again",
-		  "Your rocket is more expensive, try again",
-		  "Close enough!"+(valuegap<0 ? "Your rocket is cheaper by "+Math.round(Math.abs(valuegap*100)) :
-					"Your rocket is more expensive by "+Math.round(valuegap*100)),
+    ctx.fillText(["Your rocket has lower performance, try again",
+		  "Your rocket has higher performance, try again",
+		  "Close enough!"+(valuegap<0 ? "Your rocket is lower-performance by "+Math.round(Math.abs(valuegap*100)) :
+					"Your rocket is higher-performance by "+Math.round(valuegap*100)),
 		  "Good match!"
 		 ][target_feedback],
 		 canvas.width/2, canvas.height/2);
@@ -531,15 +531,6 @@ function feedback(what_kind){
 	error("bad feedback "+what_kind);
     }
 
-    //new cover story reverses correctness
-    if(what_kind =="correct"){
-	//oh my, the hilarity. Correct/wrong reversed for new cover story where performance is all the same and 'cheapest' is good, and it seems more intuitive to map 'cheaper' to 'smaller'. Note this also changes the meaning of all option locations, dominated decoys are on the other side.
-	what_kind = "wrong"
-    }else{
-	what_kind = "correct"
-    }
-    //end new cover story madness I'm so sorry.
-    
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -550,8 +541,8 @@ function feedback(what_kind){
     ctx.textAlign = "center";
     ctx.fillText(what_kind, canvas.width/2, canvas.height/2);
 
-
-    window.setTimeout(nextTrial,1500);
+    if(what_kind=="correct") window.setTimeout(nextTrial,1500);//good motivation? Annoying? Both?
+    if(what_kind=="wrong")  window.setTimeout(nextTrial,3000);
     
 }
 
@@ -741,6 +732,8 @@ function splashScreen(text){
 	ctx.textAlign = "center";
 	ctx.fillText(this.text, canvas.width/2, canvas.height/2);
 
+	document.getElementById("sliderdiv").innerHTML="";
+	
 	abs_holder_div.innerHTML = "<img id='splash' src='/img/continuerocket.png' "+
 	    "onmouseenter=\"this.src='"+"img/continuerocket_green.png"+"'\""+
 	    "onmouseleave=\"this.src='"+"img/continuerocket.png"+"'\""+
@@ -840,18 +833,21 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     
     var ans;
     if(targ_feature=="fuel"){
-		ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
+	ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
+	targ_feature = "stage-2" //cover story change. Wanted to change the mytrial message without changing the upstream code. This stinks. I'm sorry.
     }
     if(targ_feature =="base"){
 	ans = rockets[0].base > rockets[1].base ? rockets[0].flight_value : rockets[1].flight_value;
+	targ_feature = "stage-1" //cover story change.
     }    
     if(targ_feature =="distance"){
 	ans = rockets[0].base*rockets[0].fuel > rockets[1].base*rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
+	targ_feature=="performance";//cover story change. 
     }
     
     var mytrial = new pair_trial(rockets[0],
 				 rockets[1],
-				 "Which rocket has the cheapest "+targ_feature+"?", ans);
+				 "Which rocket has the best "+targ_feature+"?", ans);
 
     return(mytrial);
     //trials.push(mytrial);
@@ -1017,7 +1013,7 @@ function slidertrial(targ_rocket, probe_rocket, sliderfeature){
 
 	//slider bit:
 	document.getElementById("sliderdiv").innerHTML=("<div class=\"slidecontainer\" id='sliderdiv'>"+
-		       "<p class='centered'>Adjust the slider until the two rockets cost roughly the same, then click done</p>"+
+		       "<p class='centered'>Adjust the slider until both rockets have roughly the same performance, then click done</p>"+
 		       "<input type=\"range\" min=\"1\" max=\"100\" value=\"50\" class=\"slider\" id=\"myRange\">"+
 //		       "<p class='centered'><button onclick='alert('boo')'>Done</button></p>"+
 		       "</div><div id='uberdiv'></div>");
@@ -1075,13 +1071,12 @@ var slider = document.getElementById("myRange");
     }//end drawMe
 }//end slidertrial
 
-
 get_arr_of_slidertrials = function(reps_per_slidertype){
     var slidertrials = [];
-//    var reps_per_slidertype = 3;
-var slidertypes = ["base","barbar","colorcolor","barcolor","colorbar"];
+    var slidertypes = ["base","barbar","colorcolor","barcolor","colorbar"];
 for(var i = 0; i<reps_per_slidertype;i++){
     for(var myslidertype=0;myslidertype<slidertypes.length;myslidertype++){
+
 	
     var a = Math.random();
     var b = Math.random();
@@ -1106,7 +1101,7 @@ for(var i = 0; i<reps_per_slidertype;i++){
 	slidertrials.push(
 	new slidertrial(
 	    new makeRocket(a,b,"height",shuffle(["square","flair"])[0],"McRando"),
-	    new makeRocket(c,.5,"height",shuffle(["square","flair"])[0],"McRando2"),
+	    new makeRocket(.5,c,"height",shuffle(["square","flair"])[0],"McRando2"),
 	    "fuel"
 	)
 	);
@@ -1115,7 +1110,7 @@ for(var i = 0; i<reps_per_slidertype;i++){
 	slidertrials.push(
 	new slidertrial(
 	    new makeRocket(a,b,"height",shuffle(["square","flair"])[0],"McRando"),
-	    new makeRocket(c,.5,"color",shuffle(["square","flair"])[0],"McRando2"),
+	    new makeRocket(.5,c,"color",shuffle(["square","flair"])[0],"McRando2"),
 	    "fuel"
 	)
 	);
@@ -1124,7 +1119,7 @@ for(var i = 0; i<reps_per_slidertype;i++){
 	slidertrials.push(
 	new slidertrial(
 	    new makeRocket(a,b,"color",shuffle(["square","flair"])[0],"McRando"),
-	    new makeRocket(c,.5,"height",shuffle(["square","flair"])[0],"McRando2"),
+	    new makeRocket(.5,c,"height",shuffle(["square","flair"])[0],"McRando2"),
 	    "fuel"
 	)
 	);
@@ -1174,19 +1169,19 @@ for(var i=0;i<slidertrials.length;i++){
 
 trials.push(new triggerEndOfSliders());
 
-trials.push(new splashScreen("Which rocket has the best base?"))
+trials.push(new splashScreen("Which rocket has the best stage-1?"))
 shuffle(basetraining);
 for(var i=0;i<basetraining.length;i++){trials.push(basetraining[i])}
 
-trials.push(new splashScreen("Which rocket has the best fuel?"))
+trials.push(new splashScreen("Which rocket has the best stage-2?"))
 shuffle(fueltraining);
 for(var i=0;i<fueltraining.length;i++){trials.push(fueltraining[i])}
 
-trials.push(new splashScreen("Which rocket will fly furthest?"))
+trials.push(new splashScreen("Which rocket has best performance?"))
 shuffle(distancepairs);
 for(var i=0;i<distancepairs.length;i++){trials.push(distancepairs[i])}
 
-trials.push(new splashScreen("Which rocket will fly furthest?"))
+trials.push(new splashScreen("Which rocket has best performance?"))
 shuffle(distancetriads);
 for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 
