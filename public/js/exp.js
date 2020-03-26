@@ -842,7 +842,7 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     }    
     if(targ_feature =="distance"){
 	ans = rockets[0].base*rockets[0].fuel > rockets[1].base*rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
-	targ_feature=="performance";//cover story change. 
+	targ_feature="performance";//cover story change. 
     }
     
     var mytrial = new pair_trial(rockets[0],
