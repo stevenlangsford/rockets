@@ -392,7 +392,7 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
 		return(astring);
 	    }
 	}
-	var fuelcolor = display_type == "height" ? "#4d4d4d" : get_color(this.fuel) //default : variable value
+	var fuelcolor = display_type == "height" ? "#f5f0f0" : get_color(this.fuel) //default : variable value. old default was #4d4d4d 
 	
 	var fuelheight = display_type == "height" ? bh*(1-this.fuel) : 0; //when variable refs the size of the gap, so use 1-value. gap of 0 is filled-body.
 
@@ -718,7 +718,7 @@ function triad_trial(rocket1, rocket2, rocket3, triadtype){
 
 }
 //trial objects should all have drawMe functions. Chuck 'em all in an array, walk through with nextTrial calling drawMe on each.
-function splashScreen(text){
+function splashScreen(text, caption){
     this.text = text;
     this.trialtype = "splash"
     
@@ -744,7 +744,8 @@ function splashScreen(text){
 	    "position:fixed; "+
 	    "top:"+(canvas.height/2+100)+"px; "+
 	    "left:"+(canvas.width/2-150)+"px; "+
-	    "'>";
+	    "'>"+"<div class='demoimg'><p>"+caption+"</p></div>";
+	
     }
     
 }
@@ -834,11 +835,11 @@ function get_a_pair_trial(targ_feature,targ_difference,fueltype1, fueltype2){
     var ans;
     if(targ_feature=="fuel"){
 	ans = rockets[0].fuel > rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
-	targ_feature = "stage-2" //cover story change. Wanted to change the mytrial message without changing the upstream code. This stinks. I'm sorry.
+	targ_feature = "orbital stage" //cover story change. Wanted to change the mytrial message without changing the upstream code. This stinks. I'm sorry.
     }
     if(targ_feature =="base"){
 	ans = rockets[0].base > rockets[1].base ? rockets[0].flight_value : rockets[1].flight_value;
-	targ_feature = "stage-1" //cover story change.
+	targ_feature = "launch stage" //cover story change.
     }    
     if(targ_feature =="distance"){
 	ans = rockets[0].base*rockets[0].fuel > rockets[1].base*rockets[1].fuel ? rockets[0].flight_value : rockets[1].flight_value;
@@ -1131,7 +1132,7 @@ for(var i = 0; i<reps_per_slidertype;i++){
 }
 
 //global vars determine how rockets are drawn and if they are clickable. These trials flag regime changes.
-//I'm aware of how f-ing terrible a pattern this is. No further comments at this time, thank you for your understanding.
+//I'm aware of how f-ing terrible a pattern this is, i will try to do better. No further comments at this time, thank you for your understanding.
 triggerValuesOff = function(){
     this.drawMe = function(){
 	sliderValuesVisible = false;
@@ -1151,14 +1152,14 @@ triggerEndOfSliders = function(){
 //MAIN
 //ACTUALLY BUILDING THE EXP (PUSHING STIM TO TRIALS) STARTS HERE
 
-trials.push(new splashScreen("Build a matching rocket (with guides)"))
+trials.push(new splashScreen("Build a matching rocket (with guides)","The slider controls one feature of one rocket. Adjust the slider until the two rockets have roughly the same performance"))
 var slidertrials = get_arr_of_slidertrials(1);
 shuffle(slidertrials);
 for(var i=0;i<slidertrials.length;i++){
     trials.push(slidertrials[i]);
 }
 
-trials.push(new splashScreen("Build a matching rocket without guides!"));
+trials.push(new splashScreen("Build a matching rocket without guides!","The slider controls one feature of one rocket. Adjust the slider until the two rockets have roughly the same performance"));
 trials.push(new triggerValuesOff());
 
 slidertrials = get_arr_of_slidertrials(3);
@@ -1169,19 +1170,19 @@ for(var i=0;i<slidertrials.length;i++){
 
 trials.push(new triggerEndOfSliders());
 
-trials.push(new splashScreen("Which rocket has the best stage-1?"))
+trials.push(new splashScreen("Which rocket has the best launch stage?","Click on the rocket with the tallest launch-stage"))
 shuffle(basetraining);
 for(var i=0;i<basetraining.length;i++){trials.push(basetraining[i])}
 
-trials.push(new splashScreen("Which rocket has the best stage-2?"))
+trials.push(new splashScreen("Which rocket has the best orbital stage?","Click on the rocket with the yellowest color-patch OR the highest grey bar, whichever is best."))
 shuffle(fueltraining);
 for(var i=0;i<fueltraining.length;i++){trials.push(fueltraining[i])}
 
-trials.push(new splashScreen("Which rocket has best performance?"))
+trials.push(new splashScreen("Which rocket has best performance?","Click on the rocket with the best combination of launch stage and orbital stage"))
 shuffle(distancepairs);
 for(var i=0;i<distancepairs.length;i++){trials.push(distancepairs[i])}
 
-trials.push(new splashScreen("Which rocket has best performance?"))
+trials.push(new splashScreen("Which rocket has best performance?","Click on the rocket with the best combination of launch stage and orbital stage"))
 shuffle(distancetriads);
 for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
 
@@ -1195,11 +1196,30 @@ nextTrial();
 //     ctx.clearRect(0,0,canvas.width,canvas.height);
 //     abs_holder_div.innerHTML = "";
 
-//     var cellwidth = 55
-//     for(myfuel = .1; myfuel<1;myfuel=myfuel+.1){
-// 	for(mybase = .1; mybase<1;mybase=mybase+.1){
-// 	    var me = new makeRocket(myfuel,mybase,"color","demoRocket");
-// 	    me.drawMe(mybase*10*cellwidth,cellwidth*10-(myfuel*10*cellwidth)+cellwidth);
-// 	}
-//     }
+//     //    me = makeRocket(fuel_value, base_value, display_type, base_type, idstring)
+//     new makeRocket(0.1, .1, "height", "flair", "demo1").drawMe(100,250)
+//     new makeRocket(0.1, .5, "height", "flair", "demo2").drawMe(250,220)
+//     new makeRocket(0.1, .9, "height", "flair", "demo3").drawMe(400,180)
+
+//     new makeRocket(0.1, .1, "height", "square", "demo4").drawMe(100,450)
+//     new makeRocket(0.1, .5, "height", "square", "demo5").drawMe(250,420)
+//     new makeRocket(0.1, .9, "height", "square", "demo6").drawMe(400,380)
+
+//     new makeRocket(0.1, .5, "height", "square", "demo7").drawMe(550,200)
+//     new makeRocket(0.5, .5, "height", "square", "demo8").drawMe(700,200)
+//     new makeRocket(0.9, .5, "height", "square", "demo9").drawMe(850,200)
+
+//     new makeRocket(0.1, .5, "color", "square", "demo10").drawMe(550,400)
+//     new makeRocket(0.5, .5, "color", "square", "deom11").drawMe(700,400)
+//     new makeRocket(0.9, .5, "color", "square", "demo12").drawMe(850,400)
+
+
+//     // var cellwidth = 155
+//     // for(myfuel = .1; myfuel<1;myfuel=myfuel+.1){
+//     // 	for(mybase = .1; mybase<1;mybase=mybase+.1){
+//     // 	    var me = new makeRocket(myfuel,mybase,"color","demoRocket");
+//     // 	    me.drawMe(mybase*10*cellwidth,cellwidth*10-(myfuel*10*cellwidth)+cellwidth);
+//     // 	}
+//     // }
 // }
+// //draw_stim_square()

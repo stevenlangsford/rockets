@@ -1,69 +1,10 @@
-library(tidyverse)
-rm(list = ls()) #JB will come set fire to your computer...
-theme_set(theme_light())
+##pairs
+levels(pairsdf$questiontype) <- c("base", "distance", "fuel")
 
-demographicsdf <- read.csv("raw/demographicsdata.csv")
+for (i in 1:nrow(pairsdf)) {
 
-##PAIRS
-pairsdf <- read.csv("raw/pairresponsedata.csv") %>%
-    mutate(whichchosen = ifelse(choice_fuel == fuel1 &
-                                choice_base == base1,
-                                1, 2)
-           )
 
-for (i in 1:nrow(pairsdf)){ #ugh. get tidy.
-    pairsdf[i,"alt_base"] =
-        pairsdf[i, c("base2", "base1")][pairsdf$whichchosen[i]]
-    pairsdf[i,"alt_fuel"] =
-        pairsdf[i, c("fuel2", "fuel1")][pairsdf$whichchosen[i]]
-
-    pairsdf[i,"comparisontype"] <- paste0(
-    sort(
-        c(as.character(pairsdf[i,"fueltype1"]),
-          as.character(pairsdf[i,"fueltype2"])
-          )
-    ),
-    collapse = ":")
-
-    pairsdf[i, "deliberationtime"] <-
-    pairsdf[i, "responsetime"] - pairsdf[i, "drawtime"]
-
-    if (pairsdf$questiontype[i] == "Which rocket has the best launch stage?") {
-        pairsdf[i, "targfeature_diff"] <-
-            with(pairsdf[i, ], abs(base1 - base2))
-        pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
-                                         choice_base == max(base1, base2))
-    }
-    if (pairsdf$questiontype[i] == "Which rocket has the best orbital stage?") {
-        pairsdf[i, "targfeature_diff"] <-
-            with(pairsdf[i, ], abs(fuel1 - fuel2))
-                pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
-                                         choice_fuel == max(fuel1, fuel2))
-    }
-    if (pairsdf$questiontype[i] == "Which rocket has the best performance?") {
-        pairsdf[i, "targfeature_diff"] <-
-            with(pairsdf[i, ], abs((fuel1 * base1) - (fuel2 * base2)))
-
-        pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
-                                          (choice_base * choice_fuel) ==
-                                          max(c(base1 * fuel1, base2 * fuel2)))
-    }
-}#end for each row in pairsdf
-
-pairsdf$choice_performance <- with(pairsdf, choice_base * choice_fuel)
-pairsdf$alt_performance <- with(pairsdf, alt_base * alt_fuel)
-
-pairsdf <- pairsdf %>%
-    group_by(ppntID) %>%
-    mutate(std_time = (deliberationtime - mean(deliberationtime)) /
-               sd(deliberationtime)
-           ) %>%
-    ungroup
-
-##TRIADS                              
-triadsdf <- read.csv("raw/triadresponsedata.csv") %>%
-    mutate(triadtype = as.character(triadtype))
-
+}
 
 rolechosen <- function(rowid) {
     ##seems terribly byzantine?
@@ -99,7 +40,6 @@ rolechosen <- function(rowid) {
     if (mychoice == decoy)return("decoy")
 }
 
-
 triadsdf$rolechosen <- sapply(1:nrow(triadsdf), rolechosen)
 triadsdf$decoydist <- sapply(1:nrow(triadsdf), function(i) {
     return(sqrt((triadsdf[i,"base1"] - triadsdf[i, "base3"])^2 +
@@ -109,6 +49,7 @@ triadsdf$decoydist <- sapply(1:nrow(triadsdf), function(i) {
 triadsdf$comparisontype <- paste0(triadsdf$fueltype1,
                                   triadsdf$fueltype2,
                                   triadsdf$fueltype3)
+
 
 for (i in 1:nrow(triadsdf)) {
 triadsdf[i, "deliberationtime"] <-
@@ -130,7 +71,15 @@ triadsdf[i, "best_fuel_role"] <- with(triadsdf[i, ],
 
 }#end for each row in triads
 
+
 triadsdf <- triadsdf %>%
+    group_by(ppntID) %>%
+    mutate(std_time = (deliberationtime - mean(deliberationtime)) /
+               sd(deliberationtime)
+           ) %>%
+    ungroup
+
+pairsdf <- pairsdf %>%
     group_by(ppntID) %>%
     mutate(std_time = (deliberationtime - mean(deliberationtime)) /
                sd(deliberationtime)
@@ -156,33 +105,35 @@ triadsdf$rolechosen <- factor(triadsdf$rolechosen,
                               )
 
 
-##SLIDERS
-sliderdf <- read.csv("raw/slidersdata.csv")
-for (i in 1:nrow(sliderdf)) {
-    mytrialtype <- paste(sliderdf[i, "sliderfeature"],
-                         ifelse(sliderdf[i, "sliderfeature"] == "fuel",
-                                paste(as.character(sliderdf[i, "fueltype1"]),
-                                      as.character(sliderdf[i, "fueltype2"])
-                                      ), ""))
-    sliderdf[i, "trialtype"] <- mytrialtype
-    hm_prev_attempts <-
-        sliderdf %>%
-        filter(ppntID == sliderdf[i, "ppntID"] &
-               whichtrial == sliderdf[i, "whichtrial"] &
-               responsetime < sliderdf[i, "responsetime"]) %>%
-        nrow
-    sliderdf[i,"prevattempts"] <- hm_prev_attempts
-}
 
 
-## Exclusions appear at end of file because they use derived info like accuracy.
+##EXCLUSION CRITERIA
+toofast_cutoff <- 6 #min, set from inspection of 1st pilot hist of times.
+baseaccuracy_cutoff <- .6
 
-##adding some derived info to the dfs:
-participation_time <-
+toofast <- participation_time %>%
+    filter((lastresponse - firstdraw) / 1000 / 60 < toofast_cutoff) %>%
+    select(ppntID)
+
+bad_base_accuracy <-
     pairsdf %>%
-    group_by(ppntID) %>%
-    summarize(firstdraw = min(drawtime)) %>%
-    full_join(triadsdf %>%
-    group_by(ppntID) %>%
-    summarize(lastresponse = max(responsetime))
-    )
+    group_by(ppntID, questiontype) %>%
+    summarize(p_correct = mean(ans_correct)) %>%
+    filter(questiontype == "base", p_correct < baseaccuracy_cutoff) %>%
+    select(ppntID)
+
+colblind <- demographicsdf %>% filter(colblind == "yes") %>% select(ppntID)
+
+badID <- unique(c(toofast$ppntID,
+                  bad_base_accuracy$ppntID,
+                  colblind$ppntID))
+#in pilot_1: 7 exclusions, 4 too fast, 1 bad accuracy, 2 colblind. Not bad!
+
+
+pairsdf <- pairsdf %>% filter(!ppntID %in% badID)
+triadsdf <- triadsdf %>% filter(!ppntID %in% badID)
+##namespace cleanup
+rm(list = setdiff(ls(), c("pairsdf",
+                          "triadsdf",
+                          "demographicsdf",
+                          "participation_time")))
