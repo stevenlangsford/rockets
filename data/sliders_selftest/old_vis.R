@@ -298,7 +298,7 @@ if (saveplots) {
 
 featureprefs <- 
 ggplot(
-    triadsdf %>%
+triadsdf %>%
     group_by(ppntID) %>%
     summarize(chosebybase = sum(rolechosen == best_base_role),
               chosebyfuel = sum(rolechosen == best_fuel_role),

@@ -1,7 +1,7 @@
 library(patchwork)
 source("readData.R")
 
-saveplots <- FALSE
+saveplots <- TRUE
 
 ##pair trials
 pairsplot <- 
@@ -33,11 +33,15 @@ if (saveplots) {
            height = 10, width = 20)
 }
 
+pair_performancehist <- 
 ggplot(pairsdf %>%
        filter(questiontype == "Which rocket has the best performance?")) +
     geom_histogram(aes(x = choice_performance - alt_performance,
                        fill = comparisontype))+
     facet_grid(comparisontype~.) + guides(fill=FALSE)
+if (saveplots) {
+    ggsave(pair_performancehist, file = "plots/pairsperformancehist.png", width = 15)
+}
 #WHY IS THE DISTRIBTION OF COMPARIONSTYPES UNEVEN? WTF?
 
 

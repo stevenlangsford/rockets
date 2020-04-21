@@ -2,8 +2,37 @@
 levels(pairsdf$questiontype) <- c("base", "distance", "fuel")
 
 for (i in 1:nrow(pairsdf)) {
+pairsdf[i,"comparisontype"] <- paste0(
+    sort(
+        c(as.character(pairsdf[i,"fueltype1"]),
+          as.character(pairsdf[i,"fueltype2"])
+          )
+    ),
+    collapse = ":")
 
+pairsdf[i, "deliberationtime"] <-
+    pairsdf[i, "responsetime"] - pairsdf[i, "drawtime"]
 
+    if (pairsdf$questiontype[i] == "base") {
+        pairsdf[i, "targfeature_diff"] <-
+            with(pairsdf[i, ], abs(base1 - base2))
+        pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
+                                         choice_base == max(base1, base2))
+    }
+    if (pairsdf$questiontype[i] == "fuel") {
+        pairsdf[i, "targfeature_diff"] <-
+            with(pairsdf[i, ], abs(fuel1 - fuel2))
+                pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
+                                         choice_fuel == max(fuel1, fuel2))
+    }
+    if (pairsdf$questiontype[i] == "distance") {
+        pairsdf[i, "targfeature_diff"] <-
+            with(pairsdf[i, ], abs((fuel1 * base1) - (fuel2 * base2)))
+
+        pairsdf[i, "ans_correct"] <- with(pairsdf[i, ],
+                                          (choice_base * choice_fuel) ==
+                                          max(c(base1 * fuel1, base2 * fuel2)))
+    }
 }
 
 rolechosen <- function(rowid) {
