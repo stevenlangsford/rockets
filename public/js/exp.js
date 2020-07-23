@@ -9,6 +9,8 @@ var rockets_clickable = false; //again turn off for sliders, turn on for pairs/t
 var drawtime = "init";
 var sliderValuesVisible = true; //have a round of value visible sliders, then a round of value invisible sliders?
 
+var bob = [];
+
 function sliderfeasible(a,b,c){
     //slider-feature can only be in 0-1. So a*b must be in [0, c] for the slider task to be passable.
     return a*b <= c;
@@ -404,20 +406,30 @@ function makeRocket(fuel_value, base_value, display_type, base_type, idstring){
 
 	//body rect is the clickable bit:
 	live_clickables.push(function(click_x,click_y){
-	    if(click_x > x-bw && click_x < x-bw+bw*2 &&
-	       click_y > y-bh && click_y < y+bh){
-		return(
-		    {fuel:fuel_value,
+	    // if(click_x > x-bw && click_x < x-bw+bw*2 &&
+	    //    click_y > y-bh && click_y < y+bh){
+	    // 	return(
+	    // 	    {fuel:fuel_value,
+	    // 	     base:base_value,
+	    // 	     displaytype:display_type,
+	    // 	     idstring:idstring,
+	    // 	     flight:(fuel_value*base_value)
+	    // 	    }
+	    // 	);
+	    // }
+
+	    myrocket =  {fuel:fuel_value,
 		     base:base_value,
 		     displaytype:display_type,
 		     idstring:idstring,
 		     flight:(fuel_value*base_value)
-		    }
-		);
-	    }
+			}
 
-		//return((fuel_value*base_value));
-	    return "miss";//click_x > x-bw && click_x < x-bw+bw*2 && click_y > y-bh && click_y < y+bh;
+	    mydistance = Math.sqrt(Math.pow(click_x - x, 2) + Math.pow(click_y - y, 2))
+
+	    return [myrocket, mydistance]
+
+//	    return "miss";//click_x > x-bw && click_x < x-bw+bw*2 && click_y > y-bh && click_y < y+bh;
 
 
 	})
@@ -520,9 +532,12 @@ function sliderfeedback(){
     trialIndex += [-1,-1,0,0][target_feedback];
 
     window.setTimeout(nextTrial,1500);
-
-    
 }
+
+var batchfeedback_n = 5;
+var batchfeedback_trialcounter = 0;
+var batchfeedback_correctcount = 0;
+var batchfeedback_on = false;
 
 function feedback(what_kind){
     live_clickables = [];
@@ -531,6 +546,22 @@ function feedback(what_kind){
 	error("bad feedback "+what_kind);
     }
 
+    //message printed to the screen is just the what_kind string.
+    //So meddle with that to customize the message.
+    if(batchfeedback_on == true){
+	if(what_kind=="correct") batchfeedback_correctcount += 1;
+	batchfeedback_trialcounter +=1;
+
+	if(batchfeedback_trialcounter < batchfeedback_n){
+	    what_kind = "skip"
+	}
+	if(batchfeedback_trialcounter >= batchfeedback_n){
+	    what_kind = "You got "+batchfeedback_correctcount+" of the last "+batchfeedback_trialcounter+" right."
+	    batchfeedback_trialcounter = 0;
+	    batchfeedback_correctcount = 0;
+	}
+    }
+    
     var canvas = document.getElementById("ubercanvas");
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -538,12 +569,16 @@ function feedback(what_kind){
 
     ctx.font = "1.5em Arial";
     ctx.fillStyle = what_kind == "correct" ? "green" : "red";
-    ctx.textAlign = "center";
-    ctx.fillText(what_kind, canvas.width/2, canvas.height/2);
 
-    if(what_kind=="correct") window.setTimeout(nextTrial,1500);//good motivation? Annoying? Both?
-    if(what_kind=="wrong")  window.setTimeout(nextTrial,3000);
+    if(what_kind.startsWith("You got")){ctx.fillStyle = "black";}
     
+    ctx.textAlign = "center";
+    if(what_kind!="skip") ctx.fillText(what_kind, canvas.width/2, canvas.height/2);
+
+    if(what_kind == "skip") window.setTimeout(nextTrial,1500);
+    if(what_kind=="correct") window.setTimeout(nextTrial,1500);//good motivation? Annoying? Both? 
+    if(what_kind=="wrong")  window.setTimeout(nextTrial,3000);
+    if(what_kind.startsWith("You got")) window.setTimeout(nextTrial,1500);//Too fast?
 }
 
 var live_clickables = []; //cleared by nextTrial, populated by rocket.drawMe (Looks like a dangerous pattern! Better way is to...?)
@@ -565,9 +600,47 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
 	console.log("slider out")
 	return;
     }
+
+    //new distance-based click detection code:
+
+    var clickcollection = [];
+    for(i = 0; i<live_clickables.length;i++){
+	clickcollection.push(live_clickables[i](aclick.offsetX, aclick.offsetY));
+    }
+
+    var closest_to_click = {};
+    var best_i = -1;
+    var closest_dist = Infinity;
     
-    for(var i=0;i<live_clickables.length;i++){
-	var clickresult = live_clickables[i](aclick.offsetX,aclick.offsetY);
+    for(i = 0; i<clickcollection.length; i++){
+
+	if(clickcollection[i][1] < closest_dist){
+	    best_i=i;
+	    closest_to_click = clickcollection[i][0];
+	    closest_dist = clickcollection[i][1];
+	}
+    }
+
+    //DIAG
+    bob = clickcollection //global var, easy to inspect from console. :-(
+    console.log(best_i)
+    console.log("mydist "+closest_dist);
+    console.log(closest_to_click[0])
+    console.log("diag exit")
+    //DIAG
+    
+    if(closest_dist > 100){
+	clickresult = "miss"
+    }else{
+	clickresult = closest_to_click; //this makes the clickable area very big. Still looks sunken, I think the viewport calc is off by a taskbar. Rookie mistake.
+    }
+    
+    // return; //diag, here to block the old click detection code while testing the dist version above.
+    
+    // //else if rockets_clickable:    
+    // for(var i=0;i<live_clickables.length;i++){
+    // 	var clickresult = live_clickables[i](aclick.offsetX,aclick.offsetY);
+	
 	if(clickresult!="miss"){
 	    //you have a live response! save the data:
     var me = trials[trialIndex];
@@ -625,9 +698,9 @@ document.getElementById("ubercanvas").addEventListener('click',function(aclick){
 	    //end save data, do feedback.
 	    //using flight time as an id is hacky but allows multiple correct answers in triads, which is what you want. Smells bad but works.
 	    feedback(clickresult.flight==live_ans ? "correct" : "wrong") //not true/false because there might be more than 2 types of feedback one day.
-	    break;
+	    return;
 	}//end 'click is not a miss'
-    }//end for each live clickable
+    //}//end for each live clickable: for old iteration version, todelete.
 })
 
 // function response_listener(buttonid){
@@ -1149,6 +1222,13 @@ triggerEndOfSliders = function(){
     }
 }
 
+triggerStartOfTriads = function(){ //more global-state phase triggers. Oh well. At the moment this only switches on batch feedback, might do other things later?
+    this.drawMe = function(){
+	batchfeedback_on = true;
+	nextTrial();
+    }
+}
+
 //MAIN
 //ACTUALLY BUILDING THE EXP (PUSHING STIM TO TRIALS) STARTS HERE
 
@@ -1182,6 +1262,7 @@ trials.push(new splashScreen("Which rocket has best performance?","Click on the 
 shuffle(distancepairs);
 for(var i=0;i<distancepairs.length;i++){trials.push(distancepairs[i])}
 
+trials.push(new triggerStartOfTriads());
 trials.push(new splashScreen("Which rocket has best performance?","Click on the rocket with the best combination of launch stage and orbital stage"))
 shuffle(distancetriads);
 for(var i=0;i<distancetriads.length;i++){trials.push(distancetriads[i])}
@@ -1223,3 +1304,7 @@ nextTrial();
 //     // }
 // }
 // //draw_stim_square()
+
+function speedrun(){
+    while(trialIndex < 95)nextTrial()
+}
