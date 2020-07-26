@@ -24,10 +24,10 @@ participation_time <-
 levels(pairsdf$questiontype) <- c("base", "distance", "fuel")
 
 for (i in 1:nrow(pairsdf)) {
-pairsdf[i,"comparisontype"] <- paste0(
+pairsdf[i, "comparisontype"] <- paste0(
     sort(
-        c(as.character(pairsdf[i,"fueltype1"]),
-          as.character(pairsdf[i,"fueltype2"])
+        c(as.character(pairsdf[i, "fueltype1"]),
+          as.character(pairsdf[i, "fueltype2"])
           )
     ),
     collapse = ":")
@@ -187,4 +187,5 @@ triadsdf <- triadsdf %>% filter(!ppntID %in% badID)
 rm(list = setdiff(ls(), c("pairsdf",
                           "triadsdf",
                           "demographicsdf",
-                          "participation_time")))
+                          "participation_time",
+                          "badID")))

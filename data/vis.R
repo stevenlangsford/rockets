@@ -2,7 +2,7 @@ library(tidyverse)
 library(patchwork)
 source("readData.R")
 
-saveplots <- FALSE
+saveplots <- TRUE
 deliberation_cutoff <- .9 #quantile to cut deliberation time hists at
 
 timespent_hist <-
